@@ -32,51 +32,46 @@ class ProcessResumeJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            // --- 🤖 GROQ AI LAYER ---
-            // প্রম্পট মডিফাই করে আমরা স্ট্রাকচার্ড ডাটায় ATS Score এবং Suggestions নিয়ে আসছি
+            // --- 🤖 GROQ AI LAYER (UPDATED FOR EXACT CONTRACT MATCHING) ---
+            // প্রম্পট মডিফাই করে ফ্রন্টএন্ড Zod স্কিমা এবং ড্যাশবোর্ডের হুবহু ছাঁচে ডেটা জেনারেট করা হচ্ছে
             $prompt = "You are an advanced Applicant Tracking System (ATS) engine. Analyze the following raw resume text and perform a deep analysis.
 
             Follow these strict evaluation rules to calculate the 'ats_score' (0-100):
             1. Format & Structure (Max 25 pts): Standard sections like Contact info, Skills, Experience, Education present?
-            2. Impact & Action Verbs (Max 35 pts): Are bullet points starting with strong action verbs (e.g., 'Architected', 'Developed', 'Optimized') and showing measurable metrics?
+            2. Impact & Action Verbs (Max 35 pts): Are bullet points starting with strong action verbs and showing measurable metrics?
             3. Technical & Soft Skills (Max 25 pts): Are industry-relevant key skills explicitly mentioned?
             4. Education & Certifications (Max 15 pts).
-            Be critical. A poorly formatted resume with vague sentences should score below 60. A well-tailored resume should score between 80-95.
-
-            Provide exactly 3 highly specific, actionable 'ai_suggestions' based on what this resume is missing or can improve. (e.g., 'Replace passive phrase \"Responsible for building...\" with action verb \"Engineered...\"').
+            Be critical. A poorly formatted resume with vague sentences should score below 60.
 
             Return ONLY a valid JSON object. Do not use markdown backticks like ```json or any markdown formatting in your response.
 
-            JSON Structure:
+            Strict JSON Structure to Output:
             {
-            \"name\": \"\",
-            \"skills\": [],
-            \"experience\": [
-                {
-                \"title\": \"\",
-                \"company\": \"\",
-                \"duration\": \"\",
-                \"location\": \"\",
-                \"achievements\": []
-                }
-            ],
-            \"education\": [
-                {
-                \"degree\": \"\",
-                \"school\": \"\",
-                \"duration\": \"\",
-                \"cgpa\": \"\"
-                }
-            ],
-            \"ats_score\": 0,
-            \"ai_suggestions\": [
-                \"First action-oriented suggestion...\",
-                \"Second action-oriented suggestion...\",
-                \"Third action-oriented suggestion...\"
-            ]
+                \"name\": \"Full Candidate Name\",
+                \"email\": \"Candidate Email Address or email@example.com if missing\",
+                \"phone\": \"Phone number or null\",
+                \"skills\": [\"Skill1\", \"Skill2\"],
+                \"ats_score\": 85,
+                \"missing_keywords\": [\"Docker\", \"CI/CD\", \"TypeScript\"],
+                \"formatting_issues\": [\"Avoid dual-column templates\", \"Use bullet points instead of paragraphs\"],
+                \"summary\": \"Executive summary of the resume evaluation...\",
+                \"actionable_fixes\": [
+                    {
+                        \"severity\": \"critical\",
+                        \"section\": \"Work Experience\",
+                        \"suggestion\": \"Rewrite the Laravel developer role bullet points to explicitly start with active impact verbs like 'Engineered' or 'Architected' instead of 'Responsible for'.\"
+                    },
+                    {
+                        \"severity\": \"warning\",
+                        \"section\": \"Skills\",
+                        \"suggestion\": \"Add missing framework keywords relevant to fullstack engineering.\"
+                    }
+                ]
             }
 
-            Raw Resume Text: " . $this->safeText;
+            Note: For 'severity', use only 'critical', 'warning', or 'optimization'.
+
+            Raw Resume Text to Analyze: " . $this->safeText;
 
             $response = OpenAI::chat()->create([
                 'model' => 'llama-3.3-70b-versatile',
@@ -88,7 +83,7 @@ class ProcessResumeJob implements ShouldQueue
 
             $aiResponseText = $response->choices[0]->message->content;
             
-            // ক্লিনআপ
+            // ব্যাকটিক্স বা ক্লিনিং হ্যান্ডলার
             $aiResponseText = str_replace(['```json', '```'], '', $aiResponseText);
             $parsedJsonData = json_decode(trim($aiResponseText), true);
 
@@ -96,21 +91,32 @@ class ProcessResumeJob implements ShouldQueue
                 throw new Exception("AI returned invalid JSON: " . $aiResponseText);
             }
 
-            // রেসপন্স থেকে স্কোর ও সাজেশন আলাদা করা
+            // ১. স্কোর এবং এক্সিকিউটিভ সেকশন এক্সট্রাকশন
             $atsScore = isset($parsedJsonData['ats_score']) ? intval($parsedJsonData['ats_score']) : rand(70, 85);
-            $aiSuggestions = isset($parsedJsonData['ai_suggestions']) ? $parsedJsonData['ai_suggestions'] : [];
+            
+            // ২. ড্যাশবোর্ডের 'ai_suggestions' অবজেক্ট প্রিপারেশন (Zod-বান্ধব স্নেক কেস ম্যাপ)
+            $aiSuggestions = [
+                'missing_keywords'  => $parsedJsonData['missing_keywords'] ?? [],
+                'formatting_issues' => $parsedJsonData['formatting_issues'] ?? [],
+                'summary'           => $parsedJsonData['summary'] ?? 'Evaluation complete.',
+                'actionable_fixes'  => $parsedJsonData['actionable_fixes'] ?? []
+            ];
 
-            // মূল রেজুমে ডাটা ক্লিন রাখা
-            unset($parsedJsonData['ats_score']);
-            unset($parsedJsonData['ai_suggestions']);
+            // ৩. মূল প্রোফাইল এবং স্ট্রাকচার্ড রেজুমে বডি ক্লিন করা
+            $profileData = [
+                'name'  => $parsedJsonData['name'] ?? 'Candidate Name Missing',
+                'email' => $parsedJsonData['email'] ?? 'email@example.com',
+                'phone' => $parsedJsonData['phone'] ?? null,
+                'skills'=> $parsedJsonData['skills'] ?? []
+            ];
 
-            // ডাটাবেজে রিয়েল এআই ডাটা সেভ করা হচ্ছে
+            // ডাটাবেজে ফাইনাল রিয়েল এআই ডাটা আপডেট
             $this->resume->update([
-                'status' => 'completed',
-                'ats_score' => $atsScore,
-                'ai_suggestions' => $aiSuggestions, // ডাটাবেজের ai_suggestions কলামে সেভ হবে
+                'status'         => 'completed',
+                'ats_score'      => $atsScore,
+                'ai_suggestions' => $aiSuggestions, // ফ্রন্টএন্ডের missing_keywords ও actionable_fixes রিড করবে এখান থেকে
                 'parsed_content' => [
-                    'structured_data' => $parsedJsonData,
+                    'structured_data' => $profileData,
                     'raw_text_backup' => $this->safeText
                 ]
             ]);
