@@ -15,6 +15,8 @@ Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'profile']);
+    Route::put('/user', [AuthController::class, 'update']);
+    Route::put('/user/password', [AuthController::class, 'updatePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/resumes', [ResumeController::class, 'index']);
     Route::post('/resumes/upload', [ResumeController::class, 'upload']);
