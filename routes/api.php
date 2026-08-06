@@ -39,6 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/jobs', [JobApplicationController::class, 'index']);
     Route::post('/jobs', [JobApplicationController::class, 'store']);
     Route::patch('/jobs/{id}/status', [JobApplicationController::class, 'updateStatus']);
+    Route::post('/jobs/{id}/cover-letter', [JobApplicationController::class, 'saveCoverLetter']);
     Route::delete('/jobs/{id}', [JobApplicationController::class, 'destroy']);
     
     // Application Notes

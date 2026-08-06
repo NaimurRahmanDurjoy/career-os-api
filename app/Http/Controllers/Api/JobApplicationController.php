@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\JobApplication;
+use App\Models\AiJobMatch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -52,5 +53,22 @@ class JobApplicationController extends Controller
         $jobApplication->delete();
 
         return response()->json(['message' => 'Job application deleted successfully']);
+    }
+
+    public function saveCoverLetter(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'cover_letter' => 'required|string',
+        ]);
+
+        $jobApplication = JobApplication::where('user_id', Auth::id())->findOrFail($id);
+
+        $match = AiJobMatch::firstOrCreate(
+            ['job_application_id' => $jobApplication->id],
+            ['match_score' => 0, 'verdict' => 'Pending']
+        );
+        $match->update(['generated_cover_letter' => $validated['cover_letter']]);
+
+        return response()->json(['success' => true]);
     }
 }
