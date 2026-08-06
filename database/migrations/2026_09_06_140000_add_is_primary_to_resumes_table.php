@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('resumes', function (Blueprint $table) {
-            $table->boolean('is_primary')->default(false)->after('status');
-        });
+        if (!Schema::hasColumn('resumes', 'is_primary')) {
+            Schema::table('resumes', function (Blueprint $table) {
+                $table->boolean('is_primary')->default(false)->after('status');
+            });
+        }
     }
 
     /**

@@ -12,35 +12,31 @@ use Exception;
 class AiToolsController extends Controller
 {
     /**
-     * Generate an AI Cover Letter
+     * Generate an AI Cover Letter (Stateless)
      * POST /api/ai-tools/cover-letter
      */
     public function coverLetter(Request $request)
     {
         $request->validate([
-            'job_application_id' => 'required|uuid|exists:job_applications,id'
+            'resume_id' => 'required|exists:resumes,id',
+            'job_description' => 'required|string',
+            'role' => 'nullable|string',
+            'company_name' => 'nullable|string'
         ]);
 
-        $job = JobApplication::where('user_id', $request->user()->id)->findOrFail($request->job_application_id);
-        
-        if (empty($job->job_description)) {
-            return response()->json(['message' => 'Job description is required to generate a cover letter.'], 400);
-        }
-
-        $resume = $job->resume ?? $request->user()->resumes()->where('is_primary', true)->first() ?? $request->user()->resumes()->latest()->first();
-
-        if (!$resume) {
-            return response()->json(['message' => 'No valid resume found.'], 400);
-        }
+        $resume = $request->user()->resumes()->findOrFail($request->resume_id);
 
         try {
+            $roleStr = $request->role ? " for the role of '{$request->role}'" : "";
+            $companyStr = $request->company_name ? " at '{$request->company_name}'" : "";
+            
             $prompt = "You are an expert career coach writing a professional cover letter.
             
-            Write a compelling cover letter for the role of '{$job->role}' at '{$job->company_name}'.
+            Write a compelling cover letter{$roleStr}{$companyStr}.
             
             Use the following candidate profile: " . json_encode($resume->parsed_content['structured_data'] ?? []) . "
             
-            Address the following job requirements seamlessly: " . $job->job_description . "
+            Address the following job requirements seamlessly: " . $request->job_description . "
             
             The tone should be confident but not arrogant, concise, and focused on value add. Return ONLY the cover letter text, no markdown code blocks.";
 
@@ -53,14 +49,6 @@ class AiToolsController extends Controller
             ]);
 
             $coverLetter = trim($response->choices[0]->message->content);
-
-            // Save to DB
-            $match = AiJobMatch::firstOrCreate(
-                ['job_application_id' => $job->id],
-                ['match_score' => 0, 'verdict' => 'Pending']
-            );
-            
-            $match->update(['generated_cover_letter' => $coverLetter]);
 
             return response()->json([
                 'success' => true,
@@ -326,8 +314,8 @@ class AiToolsController extends Controller
 
         $job = $request->user()->jobApplications()->findOrFail($request->job_application_id);
 
-        if ($job->status !== 'offer') {
-            return response()->json(['success' => false, 'message' => 'Job must be marked as offer.'], 400);
+        if ($job->status !== 'interview') {
+            return response()->json(['success' => false, 'message' => 'Job must be marked as interview.'], 400);
         }
 
         $resume = $request->user()->resumes()->where('is_primary', true)->first();
