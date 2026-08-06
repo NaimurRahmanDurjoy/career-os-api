@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\ApplicationNoteController;
 use App\Http\Controllers\Api\AiJobMatchController;
 use App\Http\Controllers\Api\AiToolsController;
 use App\Http\Controllers\Api\ReminderController;
+use App\Http\Controllers\Api\PreparationTrackerController;
+use App\Http\Controllers\Api\AiMockTestController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -52,6 +54,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/jobs/{id}/ai-match', [AiJobMatchController::class, 'analyze']);
     Route::get('/jobs/{id}/ai-match', [AiJobMatchController::class, 'show']);
     
+    // Preparation Tracker
+    Route::apiResource('preparation-trackers', PreparationTrackerController::class);
+
+    // AI Mock Tests
+    Route::get('/mock-tests', [AiMockTestController::class, 'index']);
+    Route::post('/mock-tests/generate', [AiMockTestController::class, 'generate']);
+    Route::get('/mock-tests/{id}', [AiMockTestController::class, 'show']);
+    Route::post('/mock-tests/{id}/submit', [AiMockTestController::class, 'submit']);
+    Route::delete('/mock-tests/{id}', [AiMockTestController::class, 'destroy']);
+
     // AI Tools (Cover Letter, Interview Prep, etc)
     Route::post('/ai-tools/cover-letter', [AiToolsController::class, 'coverLetter']);
     Route::post('/ai-tools/stateless-cover-letter', [AiToolsController::class, 'statelessCoverLetter']);
