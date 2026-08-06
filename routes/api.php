@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ResumeController;
 use App\Http\Controllers\Api\JobApplicationController;
 use App\Http\Controllers\Api\OAuthController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\ApplicationNoteController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -18,6 +20,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user', [AuthController::class, 'update']);
     Route::put('/user/password', [AuthController::class, 'updatePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    
+    // Dashboard
+    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+
     Route::get('/resumes', [ResumeController::class, 'index']);
     Route::post('/resumes/upload', [ResumeController::class, 'upload']);
     Route::get('/resumes/{id}', [ResumeController::class, 'show']);
@@ -28,4 +34,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/jobs', [JobApplicationController::class, 'store']);
     Route::patch('/jobs/{id}/status', [JobApplicationController::class, 'updateStatus']);
     Route::delete('/jobs/{id}', [JobApplicationController::class, 'destroy']);
+    
+    // Application Notes
+    Route::get('/jobs/{jobId}/notes', [ApplicationNoteController::class, 'index']);
+    Route::post('/jobs/{jobId}/notes', [ApplicationNoteController::class, 'store']);
+    Route::put('/notes/{id}', [ApplicationNoteController::class, 'update']);
+    Route::delete('/notes/{id}', [ApplicationNoteController::class, 'destroy']);
 });
