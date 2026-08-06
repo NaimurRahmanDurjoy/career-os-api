@@ -9,6 +9,8 @@ use App\Http\Controllers\Api\OAuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ApplicationNoteController;
 use App\Http\Controllers\Api\AiJobMatchController;
+use App\Http\Controllers\Api\AiToolsController;
+use App\Http\Controllers\Api\ReminderController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -48,4 +50,19 @@ Route::middleware('auth:sanctum')->group(function () {
     // AI Job Matching
     Route::post('/jobs/{id}/ai-match', [AiJobMatchController::class, 'analyze']);
     Route::get('/jobs/{id}/ai-match', [AiJobMatchController::class, 'show']);
+    
+    // AI Tools (Cover Letter, Interview Prep, etc)
+    Route::post('/ai-tools/cover-letter', [AiToolsController::class, 'coverLetter']);
+    Route::post('/ai-tools/interview-questions', [AiToolsController::class, 'interviewQuestions']);
+    Route::post('/ai-tools/evaluate-match', [AiToolsController::class, 'evaluateMatch']);
+    Route::post('/ai-tools/parse-jd', [AiToolsController::class, 'parseJd']);
+    Route::post('/ai-tools/rejection-analysis', [AiToolsController::class, 'rejectionAnalysis']);
+    Route::post('/ai-tools/salary-negotiation', [AiToolsController::class, 'salaryNegotiation']);
+
+    // Reminders
+    Route::get('/reminders/upcoming', [ReminderController::class, 'upcoming']);
+    Route::get('/reminders', [ReminderController::class, 'index']);
+    Route::post('/reminders', [ReminderController::class, 'store']);
+    Route::put('/reminders/{id}', [ReminderController::class, 'update']);
+    Route::delete('/reminders/{id}', [ReminderController::class, 'destroy']);
 });
