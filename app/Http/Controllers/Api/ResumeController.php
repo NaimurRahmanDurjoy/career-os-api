@@ -126,4 +126,30 @@ public function upload(Request $request)
             'resume' => $resume
         ]);
     }
+
+    public function destroy(Request $request, $id)
+    {
+        $resume = Resume::where('user_id', $request->user()->id)->findOrFail($id);
+        
+        $resume->delete();
+        
+        return response()->json(['message' => 'Resume deleted successfully.']);
+    }
+
+    public function setPrimary(Request $request, $id)
+    {
+        $user = $request->user();
+        
+        // Unset any existing primary
+        Resume::where('user_id', $user->id)->update(['is_primary' => false]);
+        
+        // Set new primary
+        $resume = Resume::where('user_id', $user->id)->findOrFail($id);
+        $resume->update(['is_primary' => true]);
+        
+        return response()->json([
+            'message' => 'Primary resume updated successfully.',
+            'resume' => $resume
+        ]);
+    }
 }

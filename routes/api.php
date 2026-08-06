@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\JobApplicationController;
 use App\Http\Controllers\Api\OAuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ApplicationNoteController;
+use App\Http\Controllers\Api\AiJobMatchController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -24,10 +25,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 
+    // Resumes
     Route::get('/resumes', [ResumeController::class, 'index']);
-    Route::post('/resumes/upload', [ResumeController::class, 'upload']);
+    Route::post('/resumes', [ResumeController::class, 'upload']);
     Route::get('/resumes/{id}', [ResumeController::class, 'show']);
     Route::put('/resumes/{id}', [ResumeController::class, 'update']);
+    Route::delete('/resumes/{id}', [ResumeController::class, 'destroy']);
+    Route::patch('/resumes/{id}/primary', [ResumeController::class, 'setPrimary']);
     
     // Job Application Routes
     Route::get('/jobs', [JobApplicationController::class, 'index']);
@@ -40,4 +44,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/jobs/{jobId}/notes', [ApplicationNoteController::class, 'store']);
     Route::put('/notes/{id}', [ApplicationNoteController::class, 'update']);
     Route::delete('/notes/{id}', [ApplicationNoteController::class, 'destroy']);
+    
+    // AI Job Matching
+    Route::post('/jobs/{id}/ai-match', [AiJobMatchController::class, 'analyze']);
+    Route::get('/jobs/{id}/ai-match', [AiJobMatchController::class, 'show']);
 });
