@@ -53,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // AI Tools (Cover Letter, Interview Prep, etc)
     Route::post('/ai-tools/cover-letter', [AiToolsController::class, 'coverLetter']);
+    Route::post('/ai-tools/stateless-cover-letter', [AiToolsController::class, 'statelessCoverLetter']);
     Route::post('/ai-tools/interview-questions', [AiToolsController::class, 'interviewQuestions']);
     Route::post('/ai-tools/evaluate-match', [AiToolsController::class, 'evaluateMatch']);
     Route::post('/ai-tools/parse-jd', [AiToolsController::class, 'parseJd']);

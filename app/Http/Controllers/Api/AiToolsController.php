@@ -12,10 +12,60 @@ use Exception;
 class AiToolsController extends Controller
 {
     /**
-     * Generate an AI Cover Letter (Stateless)
+     * Generate an AI Cover Letter (Stateful for Job Board)
      * POST /api/ai-tools/cover-letter
      */
     public function coverLetter(Request $request)
+    {
+        $request->validate([
+            'job_application_id' => 'required|uuid|exists:job_applications,id'
+        ]);
+
+        $job = JobApplication::where('user_id', $request->user()->id)->findOrFail($request->job_application_id);
+        
+        $resume = $request->user()->resumes()->where('is_primary', true)->first();
+        if (!$resume || empty($job->job_description)) {
+            return response()->json(['success' => false, 'message' => 'Primary resume and job description required.'], 400);
+        }
+
+        try {
+            $prompt = "You are an expert career coach writing a professional cover letter.
+            Write a compelling cover letter for the role of '{$job->role}' at '{$job->company_name}'.
+            Use the following candidate profile: " . json_encode($resume->parsed_content['structured_data'] ?? []) . "
+            Address the following job requirements seamlessly: " . $job->job_description . "
+            The tone should be confident but not arrogant, concise, and focused on value add. Return ONLY the cover letter text, no markdown code blocks.";
+
+            $response = OpenAI::chat()->create([
+                'model' => 'llama-3.3-70b-versatile',
+                'messages' => [['role' => 'user', 'content' => $prompt]],
+                'temperature' => 0.5,
+            ]);
+
+            $coverLetter = trim($response->choices[0]->message->content);
+
+            $match = AiJobMatch::firstOrCreate(
+                ['job_application_id' => $job->id],
+                ['match_score' => 0, 'verdict' => 'Pending']
+            );
+            $match->update(['generated_cover_letter' => $coverLetter]);
+
+            return response()->json([
+                'success' => true,
+                'cover_letter' => $coverLetter
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate cover letter: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate an AI Cover Letter (Stateless)
+     * POST /api/ai-tools/stateless-cover-letter
+     */
+    public function statelessCoverLetter(Request $request)
     {
         $request->validate([
             'resume_id' => 'required|exists:resumes,id',
@@ -31,35 +81,23 @@ class AiToolsController extends Controller
             $companyStr = $request->company_name ? " at '{$request->company_name}'" : "";
             
             $prompt = "You are an expert career coach writing a professional cover letter.
-            
             Write a compelling cover letter{$roleStr}{$companyStr}.
-            
             Use the following candidate profile: " . json_encode($resume->parsed_content['structured_data'] ?? []) . "
-            
             Address the following job requirements seamlessly: " . $request->job_description . "
-            
             The tone should be confident but not arrogant, concise, and focused on value add. Return ONLY the cover letter text, no markdown code blocks.";
 
             $response = OpenAI::chat()->create([
                 'model' => 'llama-3.3-70b-versatile',
-                'messages' => [
-                    ['role' => 'user', 'content' => $prompt],
-                ],
+                'messages' => [['role' => 'user', 'content' => $prompt]],
                 'temperature' => 0.5,
             ]);
 
-            $coverLetter = trim($response->choices[0]->message->content);
-
             return response()->json([
                 'success' => true,
-                'cover_letter' => $coverLetter
+                'cover_letter' => trim($response->choices[0]->message->content)
             ]);
-
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to generate cover letter: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 

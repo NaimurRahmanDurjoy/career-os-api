@@ -41,4 +41,9 @@ class JobApplication extends Model
     {
         return $this->hasMany(ApplicationNote::class);
     }
+
+    public function aiMatch()
+    {
+        return $this->hasOne(AiJobMatch::class);
+    }
 }

@@ -11,7 +11,7 @@ class JobApplicationController extends Controller
 {
     public function index()
     {
-        $jobs = JobApplication::where('user_id', Auth::id())->orderBy('applied_at', 'desc')->get();
+        $jobs = JobApplication::where('user_id', Auth::id())->with('aiMatch')->orderBy('applied_at', 'desc')->get();
         return response()->json($jobs);
     }
 
