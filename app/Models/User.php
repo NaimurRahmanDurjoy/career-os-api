@@ -61,4 +61,25 @@ class User extends Authenticatable
     {
         return $this->hasMany(JobApplication::class);
     }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function subscription()
+    {
+        return $this->hasOne(Subscription::class)->latestOfMany();
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function hasActiveSubscription()
+    {
+        $sub = $this->subscription;
+        return $sub && $sub->expires_at && $sub->expires_at->isFuture();
+    }
 }

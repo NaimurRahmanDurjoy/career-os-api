@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\AiToolsController;
 use App\Http\Controllers\Api\ReminderController;
 use App\Http\Controllers\Api\PreparationTrackerController;
 use App\Http\Controllers\Api\AiMockTestController;
+use App\Http\Controllers\BillingController;
+use App\Http\Controllers\WebhookController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -79,4 +81,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reminders', [ReminderController::class, 'store']);
     Route::put('/reminders/{id}', [ReminderController::class, 'update']);
     Route::delete('/reminders/{id}', [ReminderController::class, 'destroy']);
+    
+    // Billing
+    Route::get('/billing/plans', [BillingController::class, 'getPlans']);
+    Route::post('/billing/checkout', [BillingController::class, 'initiateCheckout']);
 });
+
+// Webhooks
+Route::post('/webhooks/sslcommerz', [WebhookController::class, 'handleSslCommerzIPN']);
+Route::post('/webhooks/stripe', [WebhookController::class, 'handleStripeWebhook']);
