@@ -4,21 +4,25 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Transaction;
+use App\Models\Plan;
 
 class BillingController extends Controller
 {
     public function getPlans()
     {
+        $plans = Plan::where('is_active', true)->get()->map(function ($plan) {
+            return [
+                'id' => $plan->identifier,
+                'name' => $plan->name,
+                'price_bdt' => $plan->price_bdt,
+                'price_usd' => $plan->price_usd,
+                'features' => $plan->features ?? [],
+                'popular' => $plan->is_popular,
+            ];
+        });
+
         return response()->json([
-            'plans' => [
-                [
-                    'id' => 'pro_monthly',
-                    'name' => 'Career OS Pro',
-                    'price_bdt' => 1000,
-                    'price_usd' => 10,
-                    'features' => ['Unlimited AI Mock Tests', 'Advanced Resume Parsing', 'Priority Support']
-                ]
-            ]
+            'plans' => $plans
         ]);
     }
 
@@ -30,7 +34,15 @@ class BillingController extends Controller
         ]);
 
         $gateway = $request->gateway;
-        $amount = $gateway === 'sslcommerz' ? 1000 : 10;
+        $planId = $request->plan_id;
+        
+        $selectedPlan = Plan::where('identifier', $planId)->first();
+
+        if (!$selectedPlan || !$selectedPlan->is_active) {
+            return response()->json(['message' => 'Invalid or inactive plan specified'], 400);
+        }
+
+        $amount = $gateway === 'sslcommerz' ? $selectedPlan->price_bdt : $selectedPlan->price_usd;
         $currency = $gateway === 'sslcommerz' ? 'BDT' : 'USD';
 
         $transaction = Transaction::create([
@@ -41,8 +53,6 @@ class BillingController extends Controller
             'status' => 'pending'
         ]);
 
-        // Generating mock redirect URLs depending on gateway
-        // In production, integrate Official SDKs to get actual Hosted URLs
         $checkoutUrl = $gateway === 'sslcommerz' 
             ? 'https://sandbox.sslcommerz.com/mock-checkout/' . $transaction->id
             : 'https://checkout.stripe.com/pay/mock_' . $transaction->id;
