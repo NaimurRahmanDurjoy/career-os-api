@@ -53,8 +53,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/notes/{id}', [ApplicationNoteController::class, 'destroy']);
     
     // AI Job Matching
-    Route::post('/jobs/{id}/ai-match', [AiJobMatchController::class, 'analyze']);
-    Route::get('/jobs/{id}/ai-match', [AiJobMatchController::class, 'show']);
+    Route::post('/jobs/{id}/ai-match', [AiJobMatchController::class, 'analyze'])->middleware(\App\Http\Middleware\CheckSubscription::class.':job_match');
+    Route::get('/jobs/{id}/ai-match', [AiJobMatchController::class, 'show'])->middleware(\App\Http\Middleware\CheckSubscription::class.':job_match');
     
     // Preparation Tracker
     Route::apiResource('preparation-trackers', PreparationTrackerController::class);

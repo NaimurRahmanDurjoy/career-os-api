@@ -23,6 +23,13 @@ class ResumeController extends Controller
 
 public function upload(Request $request)
     {
+        if ($request->user()->usage['resumes'] >= $request->user()->limits['resumes']) {
+            return response()->json([
+                'message' => 'Monthly allowance reached for Resume Analysis. Please upgrade to upload more.',
+                'requires_upgrade' => true
+            ], 403);
+        }
+
         $request->validate([
             'resume' => 'required|mimes:pdf|max:5120',
             'version_name' => 'nullable|string|max:100'

@@ -28,6 +28,14 @@ class AiMockTestController extends Controller
      */
     public function generate(Request $request)
     {
+        if (Auth::user()->usage['mock_tests'] >= Auth::user()->limits['mock_tests']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Monthly allowance reached for AI Mock Tests. Please upgrade to Pro for unlimited tests.',
+                'requires_upgrade' => true
+            ], 403);
+        }
+
         $validated = $request->validate([
             'topic_name' => 'required|string|max:255',
         ]);

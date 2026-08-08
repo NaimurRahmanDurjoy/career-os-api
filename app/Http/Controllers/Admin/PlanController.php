@@ -21,6 +21,7 @@ class PlanController extends Controller
             'price_bdt' => 'required|integer',
             'price_usd' => 'required|integer',
             'features' => 'nullable|array',
+            'limits' => 'nullable|array',
             'is_popular' => 'boolean',
             'is_active' => 'boolean'
         ]);
@@ -37,6 +38,7 @@ class PlanController extends Controller
             'price_bdt' => 'integer',
             'price_usd' => 'integer',
             'features' => 'nullable|array',
+            'limits' => 'nullable|array',
             'is_popular' => 'boolean',
             'is_active' => 'boolean'
         ]);

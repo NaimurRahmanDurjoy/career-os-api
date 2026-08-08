@@ -48,6 +48,7 @@ class BillingController extends Controller
         $transaction = Transaction::create([
             'user_id' => $request->user()->id,
             'gateway' => $gateway,
+            'plan_id' => $selectedPlan->identifier,
             'amount' => $amount,
             'currency' => $currency,
             'status' => 'pending'

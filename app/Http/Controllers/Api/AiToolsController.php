@@ -17,6 +17,10 @@ class AiToolsController extends Controller
      */
     public function coverLetter(Request $request)
     {
+        if ($request->user()->usage['ai_tools'] >= $request->user()->limits['ai_tools']) {
+            return response()->json(['success' => false, 'message' => 'Monthly allowance reached for AI Tools. Please upgrade.', 'requires_upgrade' => true], 403);
+        }
+
         $request->validate([
             'job_application_id' => 'required|uuid|exists:job_applications,id'
         ]);
@@ -48,6 +52,8 @@ class AiToolsController extends Controller
                 ['match_score' => 0, 'verdict' => 'Pending']
             );
             $match->update(['generated_cover_letter' => $coverLetter]);
+            
+            $request->user()->aiUsageLogs()->create(['feature_name' => 'cover_letter']);
 
             return response()->json([
                 'success' => true,
@@ -67,6 +73,10 @@ class AiToolsController extends Controller
      */
     public function statelessCoverLetter(Request $request)
     {
+        if ($request->user()->usage['ai_tools'] >= $request->user()->limits['ai_tools']) {
+            return response()->json(['success' => false, 'message' => 'Monthly allowance reached for AI Tools. Please upgrade.', 'requires_upgrade' => true], 403);
+        }
+
         $request->validate([
             'resume_id' => 'required|exists:resumes,id',
             'job_description' => 'required|string',
@@ -92,6 +102,8 @@ class AiToolsController extends Controller
                 'temperature' => 0.5,
             ]);
 
+            $request->user()->aiUsageLogs()->create(['feature_name' => 'stateless_cover_letter']);
+
             return response()->json([
                 'success' => true,
                 'cover_letter' => trim($response->choices[0]->message->content)
@@ -107,6 +119,10 @@ class AiToolsController extends Controller
      */
     public function interviewQuestions(Request $request)
     {
+        if ($request->user()->usage['ai_tools'] >= $request->user()->limits['ai_tools']) {
+            return response()->json(['success' => false, 'message' => 'Monthly allowance reached for AI Tools. Please upgrade.', 'requires_upgrade' => true], 403);
+        }
+
         $request->validate([
             'job_application_id' => 'required|uuid|exists:job_applications,id'
         ]);
@@ -155,6 +171,8 @@ class AiToolsController extends Controller
             );
             
             $match->update(['interview_prep_questions' => $questions]);
+            
+            $request->user()->aiUsageLogs()->create(['feature_name' => 'interview_questions']);
 
             return response()->json([
                 'success' => true,
@@ -175,6 +193,10 @@ class AiToolsController extends Controller
      */
     public function evaluateMatch(Request $request)
     {
+        if ($request->user()->usage['ai_tools'] >= $request->user()->limits['ai_tools']) {
+            return response()->json(['success' => false, 'message' => 'Monthly allowance reached for AI Tools. Please upgrade.', 'requires_upgrade' => true], 403);
+        }
+
         $request->validate([
             'resume_id' => 'required|exists:resumes,id',
             'job_description' => 'required|string'
@@ -216,6 +238,8 @@ class AiToolsController extends Controller
                 throw new Exception("AI returned invalid JSON structure.");
             }
 
+            $request->user()->aiUsageLogs()->create(['feature_name' => 'evaluate_match']);
+
             return response()->json([
                 'success' => true,
                 'evaluation' => $result
@@ -235,6 +259,10 @@ class AiToolsController extends Controller
      */
     public function parseJd(Request $request)
     {
+        if ($request->user()->usage['ai_tools'] >= $request->user()->limits['ai_tools']) {
+            return response()->json(['success' => false, 'message' => 'Monthly allowance reached for AI Tools. Please upgrade.', 'requires_upgrade' => true], 403);
+        }
+
         $request->validate([
             'job_description' => 'required|string'
         ]);
@@ -270,6 +298,8 @@ class AiToolsController extends Controller
                 throw new Exception("AI returned invalid JSON structure.");
             }
 
+            $request->user()->aiUsageLogs()->create(['feature_name' => 'parse_jd']);
+
             return response()->json([
                 'success' => true,
                 'parsed_data' => $result
@@ -289,6 +319,10 @@ class AiToolsController extends Controller
      */
     public function rejectionAnalysis(Request $request)
     {
+        if ($request->user()->usage['ai_tools'] >= $request->user()->limits['ai_tools']) {
+            return response()->json(['success' => false, 'message' => 'Monthly allowance reached for AI Tools. Please upgrade.', 'requires_upgrade' => true], 403);
+        }
+
         $request->validate([
             'job_application_id' => 'required|uuid|exists:job_applications,id'
         ]);
@@ -331,6 +365,8 @@ class AiToolsController extends Controller
                 throw new Exception("AI returned invalid JSON.");
             }
 
+            $request->user()->aiUsageLogs()->create(['feature_name' => 'rejection_analysis']);
+
             return response()->json([
                 'success' => true,
                 'analysis' => $result
@@ -346,6 +382,10 @@ class AiToolsController extends Controller
      */
     public function salaryNegotiation(Request $request)
     {
+        if ($request->user()->usage['ai_tools'] >= $request->user()->limits['ai_tools']) {
+            return response()->json(['success' => false, 'message' => 'Monthly allowance reached for AI Tools. Please upgrade.', 'requires_upgrade' => true], 403);
+        }
+
         $request->validate([
             'job_application_id' => 'required|uuid|exists:job_applications,id'
         ]);
@@ -388,6 +428,8 @@ class AiToolsController extends Controller
             if (json_last_error() !== JSON_ERROR_NONE || !is_array($result)) {
                 throw new Exception("AI returned invalid JSON.");
             }
+            
+            $request->user()->aiUsageLogs()->create(['feature_name' => 'salary_negotiation']);
 
             return response()->json([
                 'success' => true,

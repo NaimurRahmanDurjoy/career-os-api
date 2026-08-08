@@ -15,12 +15,14 @@ class Plan extends Model
         'price_bdt',
         'price_usd',
         'features',
+        'limits',
         'is_popular',
         'is_active',
     ];
 
     protected $casts = [
         'features' => 'array',
+        'limits' => 'array',
         'is_popular' => 'boolean',
         'is_active' => 'boolean',
     ];

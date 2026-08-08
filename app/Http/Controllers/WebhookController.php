@@ -24,8 +24,14 @@ class WebhookController extends Controller
                 $currentExpiresAt = now();
             }
 
+            $planName = 'Career OS Pro';
+            if ($transaction->plan_id) {
+                $plan = \App\Models\Plan::where('identifier', $transaction->plan_id)->first();
+                if ($plan) $planName = $plan->name;
+            }
+
             $user->subscriptions()->create([
-                'plan_name' => 'Career OS Pro',
+                'plan_name' => $planName,
                 'expires_at' => clone $currentExpiresAt->addDays(30),
                 'status' => 'active'
             ]);
