@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Transaction;
 use App\Models\Plan;
+use Illuminate\Support\Facades\Http;
 
 class BillingController extends Controller
 {
@@ -54,9 +55,63 @@ class BillingController extends Controller
             'status' => 'pending'
         ]);
 
-        $checkoutUrl = $gateway === 'sslcommerz' 
-            ? 'https://sandbox.sslcommerz.com/mock-checkout/' . $transaction->id
-            : 'https://checkout.stripe.com/pay/mock_' . $transaction->id;
+        if ($gateway === 'sslcommerz') {
+            $apiUrl = env('SSLCOMMERZ_TESTMODE', true) 
+                ? 'https://sandbox.sslcommerz.com/gwprocess/v4/api.php' 
+                : 'https://securepay.sslcommerz.com/gwprocess/v4/api.php';
+                
+            $response = Http::asForm()->post($apiUrl, [
+                'store_id' => env('SSLCOMMERZ_STORE_ID'),
+                'store_passwd' => env('SSLCOMMERZ_STORE_PASSWORD'),
+                'total_amount' => $amount,
+                'currency' => $currency,
+                'tran_id' => $transaction->id,
+                'success_url' => url('/api/webhooks/sslcommerz/success'),
+                'fail_url' => url('/api/webhooks/sslcommerz/fail'),
+                'cancel_url' => url('/api/webhooks/sslcommerz/cancel'),
+                'cus_name' => $request->user()->name,
+                'cus_email' => $request->user()->email,
+                'cus_phone' => '01700000000',
+                'shipping_method' => 'NO',
+                'product_name' => $selectedPlan->name . ' Subscription',
+                'product_category' => 'Software',
+                'product_profile' => 'non-physical-goods',
+            ]);
+
+            $result = $response->json();
+            
+            if (isset($result['status']) && $result['status'] === 'SUCCESS') {
+                $checkoutUrl = $result['GatewayPageURL'];
+            } else {
+                return response()->json(['message' => 'SSLCommerz failed: ' . ($result['failedreason'] ?? 'Unknown Error')], 500);
+            }
+        } else {
+            // Stripe
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+            
+            $session = \Stripe\Checkout\Session::create([
+                'payment_method_types' => ['card'],
+                'line_items' => [[
+                    'price_data' => [
+                        'currency' => strtolower($currency),
+                        'product_data' => [
+                            'name' => $selectedPlan->name . ' Plan',
+                        ],
+                        'unit_amount' => intval($amount * 100),
+                    ],
+                    'quantity' => 1,
+                ]],
+                'mode' => 'payment',
+                'success_url' => url('/api/webhooks/stripe/success?session_id={CHECKOUT_SESSION_ID}'),
+                'cancel_url' => url('/api/webhooks/stripe/cancel'),
+                'client_reference_id' => $transaction->id,
+                'metadata' => [
+                    'transaction_id' => $transaction->id,
+                ]
+            ]);
+            
+            $checkoutUrl = $session->url;
+        }
 
         return response()->json([
             'checkout_url' => $checkoutUrl,

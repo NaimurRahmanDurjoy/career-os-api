@@ -18,6 +18,16 @@ class JobApplicationController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user() ?? Auth::user();
+
+        if ($user->jobApplications()->count() >= $user->limits['jobs']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Monthly limit reached for Job applications. Please upgrade.',
+                'requires_upgrade' => true
+            ], 403);
+        }
+
         $validated = $request->validate([
             'company_name' => 'required|string|max:255',
             'role' => 'required|string|max:255',
@@ -28,7 +38,7 @@ class JobApplicationController extends Controller
             'resume_id' => 'nullable|exists:resumes,id'
         ]);
 
-        $validated['user_id'] = Auth::id();
+        $validated['user_id'] = $user->id;
 
         $jobApplication = JobApplication::create($validated);
 

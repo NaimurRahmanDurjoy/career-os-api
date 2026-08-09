@@ -36,19 +36,20 @@ class User extends Authenticatable
 
     public function getLimitsAttribute()
     {
+        $defaultLimits = ['mock_tests' => 1, 'resumes' => 1, 'ai_tools' => 1, 'job_match' => false, 'jobs' => 10];
+
         try {
             $planId = $this->current_plan['identifier'];
             $plan = \App\Models\Plan::where('identifier', $planId)->first();
             
             if ($plan && $plan->limits) {
-                return $plan->limits;
+                return array_merge($defaultLimits, $plan->limits);
             }
         } catch (\Exception $e) {
             // DB table/column might not exist yet during migration
         }
 
-        // Safe Fallback limits
-        return ['mock_tests' => 1, 'resumes' => 1, 'ai_tools' => 1, 'job_match' => false];
+        return $defaultLimits;
     }
 
     public function currentCycleStart()

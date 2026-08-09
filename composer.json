@@ -13,7 +13,8 @@
         "laravel/socialite": "^5.29",
         "laravel/tinker": "^2.10.1",
         "openai-php/laravel": "^0.20.0",
-        "smalot/pdfparser": "^2.12"
+        "smalot/pdfparser": "^2.12",
+        "stripe/stripe-php": "^21.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

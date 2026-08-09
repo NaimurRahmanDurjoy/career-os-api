@@ -70,7 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/ai-tools/cover-letter', [AiToolsController::class, 'coverLetter']);
     Route::post('/ai-tools/stateless-cover-letter', [AiToolsController::class, 'statelessCoverLetter']);
     Route::post('/ai-tools/interview-questions', [AiToolsController::class, 'interviewQuestions']);
-    Route::post('/ai-tools/evaluate-match', [AiToolsController::class, 'evaluateMatch']);
+    Route::post('/ai-tools/evaluate-match', [AiToolsController::class, 'evaluateMatch'])->middleware(\App\Http\Middleware\CheckSubscription::class.':job_match');
     Route::post('/ai-tools/parse-jd', [AiToolsController::class, 'parseJd']);
     Route::post('/ai-tools/rejection-analysis', [AiToolsController::class, 'rejectionAnalysis']);
     Route::post('/ai-tools/salary-negotiation', [AiToolsController::class, 'salaryNegotiation']);
@@ -89,4 +89,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Webhooks
 Route::post('/webhooks/sslcommerz', [WebhookController::class, 'handleSslCommerzIPN']);
+Route::post('/webhooks/sslcommerz/success', [WebhookController::class, 'sslCommerzSuccess']);
+Route::post('/webhooks/sslcommerz/fail', [WebhookController::class, 'sslCommerzFail']);
+Route::post('/webhooks/sslcommerz/cancel', [WebhookController::class, 'sslCommerzCancel']);
 Route::post('/webhooks/stripe', [WebhookController::class, 'handleStripeWebhook']);
+Route::get('/webhooks/stripe/success', [WebhookController::class, 'stripeSuccess']);
+Route::get('/webhooks/stripe/cancel', [WebhookController::class, 'stripeCancel']);
