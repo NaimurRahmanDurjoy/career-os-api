@@ -95,6 +95,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::clas
     // Billing
     Route::get('/billing/plans', [BillingController::class, 'getPlans']);
     Route::post('/billing/checkout', [BillingController::class, 'initiateCheckout']);
+    Route::get('/billing/history', [BillingController::class, 'history']);
 });
 
 // Webhooks

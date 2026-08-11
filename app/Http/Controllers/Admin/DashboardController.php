@@ -14,6 +14,51 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
+        // 30 day usage aggregates
+        $thirtyDaysAgo = now()->subDays(30)->startOfDay();
+        
+        $dailyTransactions = Transaction::where('status', 'paid')
+            ->where('created_at', '>=', $thirtyDaysAgo)
+            ->selectRaw('DATE(created_at) as date, SUM(amount) as total_amount')
+            ->groupBy('date')
+            ->orderBy('date', 'asc')
+            ->get();
+
+        $dailyMockTests = AiMockTest::where('created_at', '>=', $thirtyDaysAgo)
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as total_tests')
+            ->groupBy('date')
+            ->orderBy('date', 'asc')
+            ->get();
+
+        // Build continuous 30-day map
+        $chartData = [];
+        $currentDate = clone $thirtyDaysAgo;
+        while ($currentDate <= now()) {
+            $dateString = $currentDate->format('Y-m-d');
+            $chartData[$dateString] = [
+                'date' => $currentDate->format('M d'),
+                'revenue' => 0,
+                'ai_tests' => 0,
+            ];
+            $currentDate->addDay();
+        }
+
+        foreach ($dailyTransactions as $tx) {
+            $dateString = clone \Carbon\Carbon::parse($tx->date);
+            $key = $dateString->format('Y-m-d');
+            if (isset($chartData[$key])) {
+                $chartData[$key]['revenue'] = (float)$tx->total_amount;
+            }
+        }
+
+        foreach ($dailyMockTests as $mt) {
+            $dateString = clone \Carbon\Carbon::parse($mt->date);
+            $key = $dateString->format('Y-m-d');
+            if (isset($chartData[$key])) {
+                $chartData[$key]['ai_tests'] = (int)$mt->total_tests;
+            }
+        }
+
         $metrics = [
             'total_users' => User::count(),
             'total_resumes' => Resume::count(),
@@ -22,6 +67,7 @@ class DashboardController extends Controller
             'revenue_bdt' => Transaction::where('status', 'paid')->where('currency', 'BDT')->sum('amount'),
             'revenue_usd' => Transaction::where('status', 'paid')->where('currency', 'USD')->sum('amount'),
             'recent_transactions' => Transaction::with('user:id,name,email')->where('status', 'paid')->latest()->take(5)->get(),
+            'chart_data' => array_values($chartData),
         ];
 
         return response()->json($metrics);

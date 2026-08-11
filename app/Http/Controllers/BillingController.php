@@ -118,4 +118,12 @@ class BillingController extends Controller
             'transaction_id' => $transaction->id
         ]);
     }
+
+    public function history(Request $request)
+    {
+        $transactions = $request->user()->transactions()->orderBy('created_at', 'desc')->get();
+        return response()->json([
+            'transactions' => $transactions
+        ]);
+    }
 }
