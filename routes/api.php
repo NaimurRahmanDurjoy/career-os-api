@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\ResumeController;
 use App\Http\Controllers\Api\JobApplicationController;
 use App\Http\Controllers\Api\OAuthController;
@@ -18,6 +19,11 @@ use App\Http\Controllers\WebhookController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+Route::middleware('throttle:forgot_password')->group(function () {
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
+    Route::post('/reset-password', [PasswordResetController::class, 'reset']);
+});
 
 Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect']);
 Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback']);
@@ -60,20 +66,24 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::clas
     Route::apiResource('preparation-trackers', PreparationTrackerController::class);
 
     // AI Mock Tests
-    Route::get('/mock-tests', [AiMockTestController::class, 'index']);
-    Route::post('/mock-tests/generate', [AiMockTestController::class, 'generate']);
-    Route::get('/mock-tests/{id}', [AiMockTestController::class, 'show']);
-    Route::post('/mock-tests/{id}/submit', [AiMockTestController::class, 'submit']);
-    Route::delete('/mock-tests/{id}', [AiMockTestController::class, 'destroy']);
+    Route::middleware('throttle:mock_tests')->group(function () {
+        Route::get('/mock-tests', [AiMockTestController::class, 'index']);
+        Route::post('/mock-tests/generate', [AiMockTestController::class, 'generate']);
+        Route::get('/mock-tests/{id}', [AiMockTestController::class, 'show']);
+        Route::post('/mock-tests/{id}/submit', [AiMockTestController::class, 'submit']);
+        Route::delete('/mock-tests/{id}', [AiMockTestController::class, 'destroy']);
+    });
 
     // AI Tools (Cover Letter, Interview Prep, etc)
-    Route::post('/ai-tools/cover-letter', [AiToolsController::class, 'coverLetter']);
-    Route::post('/ai-tools/stateless-cover-letter', [AiToolsController::class, 'statelessCoverLetter']);
-    Route::post('/ai-tools/interview-questions', [AiToolsController::class, 'interviewQuestions']);
-    Route::post('/ai-tools/evaluate-match', [AiToolsController::class, 'evaluateMatch'])->middleware(\App\Http\Middleware\CheckSubscription::class.':job_match');
-    Route::post('/ai-tools/parse-jd', [AiToolsController::class, 'parseJd']);
-    Route::post('/ai-tools/rejection-analysis', [AiToolsController::class, 'rejectionAnalysis']);
-    Route::post('/ai-tools/salary-negotiation', [AiToolsController::class, 'salaryNegotiation']);
+    Route::middleware('throttle:ai_tools')->group(function () {
+        Route::post('/ai-tools/cover-letter', [AiToolsController::class, 'coverLetter']);
+        Route::post('/ai-tools/stateless-cover-letter', [AiToolsController::class, 'statelessCoverLetter']);
+        Route::post('/ai-tools/interview-questions', [AiToolsController::class, 'interviewQuestions']);
+        Route::post('/ai-tools/evaluate-match', [AiToolsController::class, 'evaluateMatch'])->middleware(\App\Http\Middleware\CheckSubscription::class.':job_match');
+        Route::post('/ai-tools/parse-jd', [AiToolsController::class, 'parseJd']);
+        Route::post('/ai-tools/rejection-analysis', [AiToolsController::class, 'rejectionAnalysis']);
+        Route::post('/ai-tools/salary-negotiation', [AiToolsController::class, 'salaryNegotiation']);
+    });
 
     // Reminders
     Route::get('/reminders/upcoming', [ReminderController::class, 'upcoming']);
