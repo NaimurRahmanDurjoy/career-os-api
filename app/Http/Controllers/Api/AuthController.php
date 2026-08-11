@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\WelcomeEmail;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -25,6 +27,12 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'settings' => ['theme' => 'light'] 
         ]);
+
+        try {
+            Mail::to($user->email)->send(new WelcomeEmail($user));
+        } catch (\Exception $e) {
+            // Silently fail mail sending to avoid blocking registration if SMTP is down
+        }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 

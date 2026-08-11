@@ -7,6 +7,8 @@ use App\Models\Transaction;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\InvoiceReceipt;
 
 class WebhookController extends Controller
 {
@@ -64,6 +66,13 @@ class WebhookController extends Controller
                 'expires_at' => clone $currentExpiresAt->addDays(30),
                 'status' => 'active'
             ]);
+
+            try {
+                Mail::to($user->email)->send(new InvoiceReceipt($planName, '৳' . number_format($transaction->amount, 2), $transaction->id));
+            } catch (\Exception $e) {
+                // Silently fail mail sending
+            }
+
             return true;
         }
         return false;
@@ -160,6 +169,12 @@ class WebhookController extends Controller
                         'expires_at' => clone $currentExpiresAt->addDays(30),
                         'status' => 'active'
                     ]);
+
+                    try {
+                        Mail::to($user->email)->send(new InvoiceReceipt($planName, '$' . number_format($transaction->amount, 2), $transactionId));
+                    } catch (\Exception $e) {
+                        // Silently fail mail sending to avoid blocking payment completion
+                    }
                 }
             }
         }
