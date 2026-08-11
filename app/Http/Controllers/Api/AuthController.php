@@ -51,6 +51,14 @@ class AuthController extends Controller
             ], 401);
         }
 
+        if (!$user->is_active) {
+            $reason = $user->settings['suspension_reason'] ?? 'Please contact support.';
+            return response()->json([
+                'message' => 'Your account has been suspended. Reason: ' . $reason,
+                'require_logout' => true
+            ], 403);
+        }
+
         // if the user is authenticated, delete all previous tokens and create a new one
         $user->tokens()->delete();
         $token = $user->createToken('auth_token')->plainTextToken;

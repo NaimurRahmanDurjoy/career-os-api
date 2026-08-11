@@ -26,4 +26,52 @@ class DashboardController extends Controller
 
         return response()->json($metrics);
     }
+
+    public function users(Request $request)
+    {
+        $users = User::orderBy('created_at', 'desc')->get()->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'provider' => $user->provider,
+                'is_active' => $user->is_active,
+                'current_plan' => $user->current_plan, // Automatically uses appends accessor
+                'created_at' => $user->created_at,
+            ];
+        });
+
+        return response()->json($users);
+    }
+
+    public function toggleUserStatus(Request $request, $id)
+    {
+        $user = clone User::findOrFail($id);
+        $user->is_active = !$user->is_active;
+
+        if (!$user->is_active) {
+            $settings = $user->settings ?? [];
+            $settings['suspension_reason'] = $request->input('suspension_reason', null);
+            $user->settings = $settings;
+        } else {
+            $settings = $user->settings ?? [];
+            unset($settings['suspension_reason']);
+            $user->settings = $settings;
+        }
+
+        $user->save();
+
+        return response()->json([
+            'message' => 'User status updated',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'provider' => $user->provider,
+                'is_active' => $user->is_active,
+                'current_plan' => $user->current_plan,
+                'created_at' => $user->created_at,
+            ]
+        ]);
+    }
 }

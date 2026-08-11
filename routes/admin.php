@@ -13,4 +13,8 @@ Route::middleware('auth:admin')->group(function () {
     
     // Manage Dynamic Plans
     Route::apiResource('/plans', PlanController::class);
+    
+    // Manage Users
+    Route::get('/users', [DashboardController::class, 'users']);
+    Route::patch('/users/{id}/toggle-status', [DashboardController::class, 'toggleUserStatus']);
 });

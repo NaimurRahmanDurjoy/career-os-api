@@ -22,7 +22,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect']);
 Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::class])->group(function () {
     Route::get('/user', [AuthController::class, 'profile']);
     Route::put('/user', [AuthController::class, 'update']);
     Route::put('/user/password', [AuthController::class, 'updatePassword']);
