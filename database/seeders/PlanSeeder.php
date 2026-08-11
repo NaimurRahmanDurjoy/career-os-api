@@ -36,8 +36,8 @@ class PlanSeeder extends Seeder
             'name' => 'Career OS Pro',
             'price_bdt' => 800,
             'price_usd' => 8,
-            'features' => ['Unlimited AI Mock Tests', 'Advanced Resume Parsing', 'Priority Support'],
-            'limits' => ['mock_tests' => 999999, 'resumes' => 999999, 'ai_tools' => 999999, 'job_match' => true, 'jobs' => 999999],
+            'features' => ['100 AI Mock Tests', 'Advanced Resume Parsing', 'Priority Support'],
+            'limits' => ['mock_tests' => 100, 'resumes' => 100, 'ai_tools' => 500, 'job_match' => true, 'jobs' => 1000],
             'is_popular' => true,
             'is_active' => true,
         ]);
@@ -47,8 +47,8 @@ class PlanSeeder extends Seeder
             'name' => 'Career OS Ultra',
             'price_bdt' => 1000,
             'price_usd' => 10,
-            'features' => ['Everything in Pro', '1-on-1 Interview Coaching', 'Dedicated Account Manager'],
-            'limits' => ['mock_tests' => 999999, 'resumes' => 999999, 'ai_tools' => 999999, 'job_match' => true, 'jobs' => 999999],
+            'features' => ['300 AI Mock Tests', '1-on-1 Interview Coaching', 'Dedicated Account Manager'],
+            'limits' => ['mock_tests' => 300, 'resumes' => 300, 'ai_tools' => 1500, 'job_match' => true, 'jobs' => 3000],
             'is_popular' => false,
             'is_active' => true,
         ]);
