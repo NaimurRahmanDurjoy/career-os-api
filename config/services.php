@@ -41,4 +41,16 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URL', 'http://localhost:5173/oauth/callback'),
     ],
 
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect' => env('FACEBOOK_REDIRECT_URL', 'http://localhost:5173/oauth/callback'),
+    ],
+
+    'linkedin' => [
+        'client_id' => env('LINKEDIN_CLIENT_ID'),
+        'client_secret' => env('LINKEDIN_CLIENT_SECRET'),
+        'redirect' => env('LINKEDIN_REDIRECT_URL', 'http://localhost:5173/oauth/callback'),
+    ],
+
 ];
