@@ -74,7 +74,7 @@ class ProcessResumeJob implements ShouldQueue
             Raw Resume Text to Analyze: " . $this->safeText;
 
             $response = OpenAI::chat()->create([
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => config('services.groq.model'),
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt],
                 ],

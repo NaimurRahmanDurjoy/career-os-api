@@ -53,4 +53,8 @@ return [
         'redirect' => env('LINKEDIN_REDIRECT_URL', 'http://localhost:5173/oauth/callback'),
     ],
 
+    'groq' => [
+        'model' => env('GROQ_DEFAULT_MODEL', 'qwen/qwen3.6-27b'),
+    ],
+
 ];

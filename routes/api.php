@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\AiToolsController;
 use App\Http\Controllers\Api\ReminderController;
 use App\Http\Controllers\Api\PreparationTrackerController;
 use App\Http\Controllers\Api\AiMockTestController;
+use App\Http\Controllers\Api\CoverLetterController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\WebhookController;
 
@@ -57,6 +58,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::clas
     Route::post('/jobs/{jobId}/notes', [ApplicationNoteController::class, 'store']);
     Route::put('/notes/{id}', [ApplicationNoteController::class, 'update']);
     Route::delete('/notes/{id}', [ApplicationNoteController::class, 'destroy']);
+    
+    // Cover Letters
+    Route::get('/jobs/{jobId}/cover-letters', [CoverLetterController::class, 'show']);
+    Route::post('/jobs/{jobId}/cover-letters/generate', [CoverLetterController::class, 'generate'])->middleware('throttle:ai_tools');
+    Route::put('/jobs/{jobId}/cover-letters', [CoverLetterController::class, 'update']);
     
     // AI Job Matching
     Route::post('/jobs/{id}/ai-match', [AiJobMatchController::class, 'analyze'])->middleware(\App\Http\Middleware\CheckSubscription::class.':job_match');

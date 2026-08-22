@@ -50,7 +50,7 @@ class ProcessJobMatchJob implements ShouldQueue
             Job Description: " . $this->jobDescription;
 
             $response = OpenAI::chat()->create([
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => config('services.groq.model'),
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt],
                 ],

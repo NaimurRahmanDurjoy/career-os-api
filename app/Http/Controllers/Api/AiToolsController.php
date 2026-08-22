@@ -40,7 +40,7 @@ class AiToolsController extends Controller
             The tone should be confident but not arrogant, concise, and focused on value add. Return ONLY the cover letter text, no markdown code blocks.";
 
             $response = OpenAI::chat()->create([
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => config('services.groq.model'),
                 'messages' => [['role' => 'user', 'content' => $prompt]],
                 'temperature' => 0.5,
             ]);
@@ -97,7 +97,7 @@ class AiToolsController extends Controller
             The tone should be confident but not arrogant, concise, and focused on value add. Return ONLY the cover letter text, no markdown code blocks.";
 
             $response = OpenAI::chat()->create([
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => config('services.groq.model'),
                 'messages' => [['role' => 'user', 'content' => $prompt]],
                 'temperature' => 0.5,
             ]);
@@ -148,7 +148,7 @@ class AiToolsController extends Controller
             ]";
 
             $response = OpenAI::chat()->create([
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => config('services.groq.model'),
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt],
                 ],
@@ -222,7 +222,7 @@ class AiToolsController extends Controller
             Do not include any markdown formatting (like ```json), just output raw JSON text.";
 
             $response = OpenAI::chat()->create([
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => config('services.groq.model'),
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt],
                 ],
@@ -282,7 +282,7 @@ class AiToolsController extends Controller
             Do not include markdown formatting (like ```json), just output raw JSON text.";
 
             $response = OpenAI::chat()->create([
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => config('services.groq.model'),
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt]
                 ],
@@ -353,7 +353,7 @@ class AiToolsController extends Controller
             No markdown blocks, just raw JSON.";
 
             $response = OpenAI::chat()->create([
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => config('services.groq.model'),
                 'messages' => [['role' => 'user', 'content' => $prompt]],
                 'temperature' => 0.5, 
             ]);
@@ -417,7 +417,7 @@ class AiToolsController extends Controller
             No markdown blocks, just raw JSON.";
 
             $response = OpenAI::chat()->create([
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => config('services.groq.model'),
                 'messages' => [['role' => 'user', 'content' => $prompt]],
                 'temperature' => 0.5, 
             ]);

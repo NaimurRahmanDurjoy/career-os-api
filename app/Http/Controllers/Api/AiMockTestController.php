@@ -51,7 +51,7 @@ class AiMockTestController extends Controller
             - 'explanation': A brief explanation of why the answer is correct";
 
             $response = OpenAI::chat()->create([
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => config('services.groq.model'),
                 'messages' => [['role' => 'user', 'content' => $prompt]],
                 'temperature' => 0.5,
                 'response_format' => ['type' => 'json_object'],
