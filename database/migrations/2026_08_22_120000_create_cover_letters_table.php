@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('cover_letters', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('job_id')->constrained('job_applications')->onDelete('cascade');
+            $table->foreignUuid('job_id')->constrained('job_applications')->onDelete('cascade');
             $table->longText('content');
             $table->timestamps();
         });

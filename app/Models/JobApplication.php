@@ -46,4 +46,9 @@ class JobApplication extends Model
     {
         return $this->hasOne(AiJobMatch::class);
     }
+
+    public function contacts()
+    {
+        return $this->hasMany(JobContact::class, 'job_id');
+    }
 }

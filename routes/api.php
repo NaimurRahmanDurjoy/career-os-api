@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\ReminderController;
 use App\Http\Controllers\Api\PreparationTrackerController;
 use App\Http\Controllers\Api\AiMockTestController;
 use App\Http\Controllers\Api\CoverLetterController;
+use App\Http\Controllers\Api\JobContactController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\WebhookController;
 
@@ -58,6 +59,12 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::clas
     Route::post('/jobs/{jobId}/notes', [ApplicationNoteController::class, 'store']);
     Route::put('/notes/{id}', [ApplicationNoteController::class, 'update']);
     Route::delete('/notes/{id}', [ApplicationNoteController::class, 'destroy']);
+    
+    // Contacts (CRM)
+    Route::get('/jobs/{jobId}/contacts', [JobContactController::class, 'index']);
+    Route::post('/jobs/{jobId}/contacts', [JobContactController::class, 'store']);
+    Route::put('/contacts/{id}', [JobContactController::class, 'update']);
+    Route::delete('/contacts/{id}', [JobContactController::class, 'destroy']);
     
     // Cover Letters
     Route::get('/jobs/{jobId}/cover-letters', [CoverLetterController::class, 'show']);
