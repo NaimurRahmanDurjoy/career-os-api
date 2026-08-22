@@ -11,7 +11,7 @@ class BillingController extends Controller
 {
     public function getPlans()
     {
-        $plans = Plan::where('is_active', true)->get()->map(function ($plan) {
+        $plans = Plan::where('is_active', true)->orderBy('price_usd', 'asc')->get()->map(function ($plan) {
             return [
                 'id' => $plan->identifier,
                 'name' => $plan->name,
