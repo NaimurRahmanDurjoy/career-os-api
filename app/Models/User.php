@@ -36,7 +36,7 @@ class User extends Authenticatable
 
     public function getLimitsAttribute()
     {
-        $defaultLimits = ['mock_tests' => 1, 'resumes' => 1, 'ai_tools' => 1, 'job_match' => false, 'jobs' => 10];
+        $defaultLimits = ['mock_tests' => 2, 'resumes' => 2, 'ai_tools' => 2, 'job_match' => false, 'jobs' => 10];
 
         try {
             $planId = $this->current_plan['identifier'];

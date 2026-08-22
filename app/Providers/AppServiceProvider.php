@@ -23,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (config('app.env') === 'production') {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         RateLimiter::for('ai_tools', function (Request $request) {
             return $request->user()
                 ? Limit::perMinute(3)->by($request->user()->id)
