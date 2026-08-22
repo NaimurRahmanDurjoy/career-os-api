@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\PreparationTrackerController;
 use App\Http\Controllers\Api\AiMockTestController;
 use App\Http\Controllers\Api\CoverLetterController;
 use App\Http\Controllers\Api\JobContactController;
+use App\Http\Controllers\Api\ChatAssistantController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\WebhookController;
 
@@ -89,6 +90,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::clas
 
     // AI Tools (Cover Letter, Interview Prep, etc)
     Route::middleware('throttle:ai_tools')->group(function () {
+        Route::post('/chat/completions', [ChatAssistantController::class, 'respond']);
         Route::post('/ai-tools/cover-letter', [AiToolsController::class, 'coverLetter']);
         Route::post('/ai-tools/stateless-cover-letter', [AiToolsController::class, 'statelessCoverLetter']);
         Route::post('/ai-tools/interview-questions', [AiToolsController::class, 'interviewQuestions']);
