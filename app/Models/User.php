@@ -68,7 +68,7 @@ class User extends Authenticatable
             return [
                 'jobs' => $this->jobApplications()->where('created_at', '>=', $cycleStart)->count(),
                 'mock_tests' => \App\Models\AiMockTest::where('user_id', $this->id)->where('created_at', '>=', $cycleStart)->count(),
-                'resumes' => $this->resumes()->where('created_at', '>=', $cycleStart)->count(),
+                'resumes' => $this->resumes()->where('status', '!=', 'failed')->where('created_at', '>=', $cycleStart)->count(),
                 'ai_tools' => $this->aiUsageLogs()->where('created_at', '>=', $cycleStart)->count(),
             ];
         } catch (\Exception $e) {
