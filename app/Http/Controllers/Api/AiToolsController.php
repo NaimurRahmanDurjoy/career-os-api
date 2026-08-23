@@ -113,7 +113,9 @@ class AiToolsController extends Controller
                 'cover_letter' => trim($content)
             ]);
         } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            $isRateLimit = str_contains(strtolower($e->getMessage()), 'rate limit') || str_contains(strtolower($e->getMessage()), '429');
+            $status = $isRateLimit ? 429 : 500;
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $status);
         }
     }
 
