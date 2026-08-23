@@ -43,6 +43,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::clas
     // Resumes
     Route::get('/resumes', [ResumeController::class, 'index']);
     Route::post('/resumes', [ResumeController::class, 'upload']);
+    Route::post('/resumes/{id}/retry', [ResumeController::class, 'retry']);
     Route::get('/resumes/{id}', [ResumeController::class, 'show']);
     Route::put('/resumes/{id}', [ResumeController::class, 'update']);
     Route::delete('/resumes/{id}', [ResumeController::class, 'destroy']);

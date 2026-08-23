@@ -48,23 +48,37 @@ class AiMockTestController extends Controller
             - 'question': The question text
             - 'options': Array of 4 possible string answers
             - 'correctIndex': Integer (0-3) indicating the correct option
-            - 'explanation': A brief explanation of why the answer is correct";
+            - 'explanation': A brief explanation of why the answer is correct
+            CRITICAL INSTRUCTION: Do NOT output a <think> block or reasoning trace. Bypass thinking completely and output ONLY the raw JSON array.";
 
             $response = OpenAI::chat()->create([
                 'model' => config('services.groq.model'),
                 'messages' => [['role' => 'user', 'content' => $prompt]],
                 'temperature' => 0.5,
-                'response_format' => ['type' => 'json_object'],
+                'max_tokens' => 4000,
             ]);
 
-            $jsonString = trim($response->choices[0]->message->content);
-            // sometimes the model nests the array inside another key in json mode
+            $jsonString = $response->choices[0]->message->content;
+            $jsonString = preg_replace('/<think>.*?<\/think>\s*/s', '', $jsonString);
+            $jsonString = preg_replace('/<think>.*$/s', '', $jsonString);
+            
+            // Robustly extract JSON (could be array or object container finding)
+            if (preg_match('/\[[\s\S]*\]/', $jsonString, $matches)) {
+                $jsonString = $matches[0];
+            } else {
+                $jsonString = trim(str_replace(['```json', '```'], '', $jsonString));
+            }
+
             $parsed = json_decode($jsonString, true);
             $questions = [];
             
+            if (!is_array($parsed)) {
+                throw new Exception("AI returned unparseable JSON string: " . substr($jsonString, 0, 500) . "...");
+            }
+            
             if (isset($parsed['questions']) && is_array($parsed['questions'])) {
                 $questions = $parsed['questions'];
-            } elseif (is_array($parsed) && isset($parsed[0])) {
+            } elseif (isset($parsed[0])) {
                 $questions = $parsed;
             } else {
                 foreach ($parsed as $key => $val) {
@@ -88,6 +102,7 @@ class AiMockTestController extends Controller
 
             return response()->json($test, 201);
         } catch (Exception $e) {
+            \Log::error('Mock Test AI Gen Error: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to generate mock test: ' . $e->getMessage()

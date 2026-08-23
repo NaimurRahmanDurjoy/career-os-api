@@ -37,15 +37,22 @@ class AiToolsController extends Controller
             Write a compelling cover letter for the role of '{$job->role}' at '{$job->company_name}'.
             Use the following candidate profile: " . json_encode($resume->parsed_content['structured_data'] ?? []) . "
             Address the following job requirements seamlessly: " . $job->job_description . "
-            The tone should be confident but not arrogant, concise, and focused on value add. Return ONLY the cover letter text, no markdown code blocks.";
+            The tone should be confident but not arrogant, concise, and focused on value add. CRITICAL MUST-FOLLOW: Keep the cover letter extremely concise, strictly under 250 words total. Format it as a proper professional letter: OMIT the contact information at the top entirely. Start the string directly with the Salutation (e.g. Dear Hiring Manager), followed by a maximum of 3 short body paragraphs, and end with a professional sign-off. Do NOT output a <think> block or reasoning trace. Bypass thinking completely and output ONLY the cover letter text, no markdown code blocks.";
 
             $response = OpenAI::chat()->create([
                 'model' => config('services.groq.model'),
                 'messages' => [['role' => 'user', 'content' => $prompt]],
-                'temperature' => 0.5,
+                'temperature' => 0.6,
+                'max_tokens' => 1536,
             ]);
 
-            $coverLetter = trim($response->choices[0]->message->content);
+            $content = $response->choices[0]->message->content;
+            // Strip out <think> tags (used by reasoning models like deepseek-r1)
+            $content = preg_replace('/<think>.*?<\/think>\s*/s', '', $content);
+            // If the model still cut off inside <think>, we fallback to stripping whatever is left so it doesn't leak
+            $content = preg_replace('/<think>.*$/s', '', $content);
+            
+            $coverLetter = trim($content);
 
             $match = AiJobMatch::firstOrCreate(
                 ['job_application_id' => $job->id],
@@ -94,19 +101,24 @@ class AiToolsController extends Controller
             Write a compelling cover letter{$roleStr}{$companyStr}.
             Use the following candidate profile: " . json_encode($resume->parsed_content['structured_data'] ?? []) . "
             Address the following job requirements seamlessly: " . $request->job_description . "
-            The tone should be confident but not arrogant, concise, and focused on value add. Return ONLY the cover letter text, no markdown code blocks.";
+            The tone should be confident but not arrogant, concise, and focused on value add. CRITICAL MUST-FOLLOW: Keep the cover letter extremely concise, strictly under 250 words total. Format it as a proper professional letter: OMIT the contact information at the top entirely. Start the string directly with the Salutation (e.g. Dear Hiring Manager), followed by a maximum of 3 short body paragraphs, and end with a professional sign-off. Do NOT output a <think> block or reasoning trace. Bypass thinking completely and output ONLY the cover letter text, no markdown code blocks.";
 
             $response = OpenAI::chat()->create([
                 'model' => config('services.groq.model'),
                 'messages' => [['role' => 'user', 'content' => $prompt]],
-                'temperature' => 0.5,
+                'temperature' => 0.6,
+                'max_tokens' => 1536,
             ]);
 
             $request->user()->aiUsageLogs()->create(['feature_name' => 'stateless_cover_letter']);
 
+            $content = $response->choices[0]->message->content;
+            $content = preg_replace('/<think>.*?<\/think>\s*/s', '', $content);
+            $content = preg_replace('/<think>.*$/s', '', $content);
+
             return response()->json([
                 'success' => true,
-                'cover_letter' => trim($response->choices[0]->message->content)
+                'cover_letter' => trim($content)
             ]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -147,16 +159,31 @@ class AiToolsController extends Controller
                 { \"type\": \"Technical\", \"question\": \"...\", \"strategy\": \"...\" }
             ]";
 
-            $response = OpenAI::chat()->create([
-                'model' => config('services.groq.model'),
-                'messages' => [
-                    ['role' => 'user', 'content' => $prompt],
+            // Sending payload natively to Gemini 1.5 Flash via Laravel HTTP (Zero 'thinking' overhead!)
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'Content-Type' => 'application/json'
+            ])->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' . env('GEMINI_API_KEY'), [
+                'contents' => [
+                    ['parts' => [['text' => $prompt]]]
                 ],
-                'temperature' => 0.3,
+                'generationConfig' => [
+                    'temperature' => 0.3,
+                    'maxOutputTokens' => 1500,
+                ]
             ]);
 
-            $rawOutput = $response->choices[0]->message->content;
-            $rawOutput = str_replace(['```json', '```'], '', $rawOutput);
+            if (!$response->successful()) {
+                throw new Exception("Gemini API failed: " . $response->body());
+            }
+
+            $rawOutput = $response->json('candidates.0.content.parts.0.text') ?? '';
+            
+            // Robustly extract JSON array from output
+            if (preg_match('/\[[\s\S]*\]/', $rawOutput, $matches)) {
+                $rawOutput = $matches[0];
+            } else {
+                $rawOutput = str_replace(['```json', '```'], '', $rawOutput);
+            }
             
             $questions = json_decode(trim($rawOutput), true);
 
@@ -219,22 +246,31 @@ class AiToolsController extends Controller
                \"strengths\": [\"strength1\"],
                \"recommendation\": \"Brief advice on applying\"
             }
-            Do not include any markdown formatting (like ```json), just output raw JSON text.";
+            CRITICAL MUST-FOLLOW RULES: You are a pure JSON API. Output NOTHING but the raw JSON object. Do not include any conversational text, do not explain your reasoning, do not output thoughts, and do not use markdown blocks like ```json. Start your response exactly with { and end exactly with }.";
 
             $response = OpenAI::chat()->create([
                 'model' => config('services.groq.model'),
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt],
                 ],
-                'temperature' => 0.2, 
+                'temperature' => 0.2,
+                'max_tokens' => 1024,
             ]);
 
             $rawOutput = $response->choices[0]->message->content;
-            $rawOutput = str_replace(['```json', '```'], '', $rawOutput);
+            $rawOutput = preg_replace('/<think>.*?<\/think>\s*/s', '', $rawOutput);
+            $rawOutput = preg_replace('/<think>.*$/s', '', $rawOutput);
             
-            $result = json_decode(trim($rawOutput), true);
+            if (preg_match('/\{[\s\S]*\}/', $rawOutput, $matches)) {
+                $rawOutput = $matches[0];
+            } else {
+                $rawOutput = trim(str_replace(['```json', '```'], '', $rawOutput));
+            }
+            
+            $result = json_decode($rawOutput, true);
 
             if (json_last_error() !== JSON_ERROR_NONE || !is_array($result)) {
+                \Log::error('Evaluate Match Invalid JSON. Error: ' . json_last_error_msg() . ' Raw: ' . $rawOutput);
                 throw new Exception("AI returned invalid JSON structure.");
             }
 
@@ -287,10 +323,19 @@ class AiToolsController extends Controller
                     ['role' => 'user', 'content' => $prompt]
                 ],
                 'temperature' => 0.1, 
+                'max_tokens' => 1024,
             ]);
 
             $rawOutput = $response->choices[0]->message->content;
-            $rawOutput = str_replace(['```json', '```'], '', $rawOutput);
+            $rawOutput = preg_replace('/<think>.*?<\/think>\s*/s', '', $rawOutput);
+            $rawOutput = preg_replace('/<think>.*$/s', '', $rawOutput);
+            
+            // Robustly extract JSON object from output
+            if (preg_match('/\{[\s\S]*\}/', $rawOutput, $matches)) {
+                $rawOutput = $matches[0];
+            } else {
+                $rawOutput = str_replace(['```json', '```'], '', $rawOutput);
+            }
             
             $result = json_decode(trim($rawOutput), true);
 
@@ -356,9 +401,20 @@ class AiToolsController extends Controller
                 'model' => config('services.groq.model'),
                 'messages' => [['role' => 'user', 'content' => $prompt]],
                 'temperature' => 0.5, 
+                'max_tokens' => 1536,
             ]);
 
-            $rawOutput = str_replace(['```json', '```'], '', $response->choices[0]->message->content);
+            $rawOutput = $response->choices[0]->message->content;
+            $rawOutput = preg_replace('/<think>.*?<\/think>\s*/s', '', $rawOutput);
+            $rawOutput = preg_replace('/<think>.*$/s', '', $rawOutput);
+            
+            // Robustly extract JSON object from output
+            if (preg_match('/\{[\s\S]*\}/', $rawOutput, $matches)) {
+                $rawOutput = $matches[0];
+            } else {
+                $rawOutput = str_replace(['```json', '```'], '', $rawOutput);
+            }
+            
             $result = json_decode(trim($rawOutput), true);
 
             if (json_last_error() !== JSON_ERROR_NONE || !is_array($result)) {
@@ -420,9 +476,20 @@ class AiToolsController extends Controller
                 'model' => config('services.groq.model'),
                 'messages' => [['role' => 'user', 'content' => $prompt]],
                 'temperature' => 0.5, 
+                'max_tokens' => 1536,
             ]);
 
-            $rawOutput = str_replace(['```json', '```'], '', $response->choices[0]->message->content);
+            $rawOutput = $response->choices[0]->message->content;
+            $rawOutput = preg_replace('/<think>.*?<\/think>\s*/s', '', $rawOutput);
+            $rawOutput = preg_replace('/<think>.*$/s', '', $rawOutput);
+            
+            // Robustly extract JSON object from output
+            if (preg_match('/\{[\s\S]*\}/', $rawOutput, $matches)) {
+                $rawOutput = $matches[0];
+            } else {
+                $rawOutput = str_replace(['```json', '```'], '', $rawOutput);
+            }
+            
             $result = json_decode(trim($rawOutput), true);
 
             if (json_last_error() !== JSON_ERROR_NONE || !is_array($result)) {

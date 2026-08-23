@@ -95,16 +95,23 @@ class PreparationTrackerController extends Controller
                 ['moduleName' => 'Mental Ability & Math', 'progress' => 0, 'topics' => [['name' => 'Algebra', 'completed' => false], ['name' => 'Geometry', 'completed' => false]]],
             ],
             'Bank Job' => [
-                ['moduleName' => 'Mathematics', 'progress' => 0, 'topics' => [['name' => 'Arithmetic', 'completed' => false], ['name' => 'Algebra', 'completed' => false]]],
-                ['moduleName' => 'English', 'progress' => 0, 'topics' => [['name' => 'Reading Comprehension', 'completed' => false], ['name' => 'Grammar', 'completed' => false]]],
-                ['moduleName' => 'General Knowledge', 'progress' => 0, 'topics' => [['name' => 'Current Affairs', 'completed' => false], ['name' => 'Banking terms', 'completed' => false]]],
-                ['moduleName' => 'Computer Knowledge', 'progress' => 0, 'topics' => [['name' => 'Basic IT', 'completed' => false], ['name' => 'MS Office', 'completed' => false]]],
+                ['moduleName' => 'Mathematics', 'progress' => 0, 'topics' => [['name' => 'Arithmetic', 'completed' => false], ['name' => 'Algebra & Geometry', 'completed' => false]]],
+                ['moduleName' => 'English', 'progress' => 0, 'topics' => [['name' => 'Reading Comprehension', 'completed' => false], ['name' => 'Grammar & Vocabulary', 'completed' => false]]],
+                ['moduleName' => 'General Knowledge', 'progress' => 0, 'topics' => [['name' => 'Current Affairs', 'completed' => false], ['name' => 'Banking Terminologies', 'completed' => false]]],
+                ['moduleName' => 'Computer Knowledge', 'progress' => 0, 'topics' => [['name' => 'Basic IT & Hardware', 'completed' => false], ['name' => 'MS Office & Internet', 'completed' => false]]],
             ],
+            'Govt IT Exam' => [
+                ['moduleName' => 'Computer Science Fundamentals', 'progress' => 0, 'topics' => [['name' => 'Data Structures & Algorithms', 'completed' => false], ['name' => 'Operating Systems', 'completed' => false], ['name' => 'Discrete Mathematics', 'completed' => false]]],
+                ['moduleName' => 'Software & Web Engineering', 'progress' => 0, 'topics' => [['name' => 'SDLC & Agile Methodologies', 'completed' => false], ['name' => 'Object Oriented Programming (OOP)', 'completed' => false], ['name' => 'Web Technologies (HTML/JS/PHP)', 'completed' => false]]],
+                ['moduleName' => 'Database Management (DBMS)', 'progress' => 0, 'topics' => [['name' => 'SQL Queries & Joins', 'completed' => false], ['name' => 'Database Normalization', 'completed' => false], ['name' => 'ACID Properties & Transactions', 'completed' => false]]],
+                ['moduleName' => 'Computer Networks & Security', 'progress' => 0, 'topics' => [['name' => 'OSI & TCP/IP Models', 'completed' => false], ['name' => 'Routing Protocols', 'completed' => false], ['name' => 'Cryptography & Cyber Security', 'completed' => false]]],
+                ['moduleName' => 'System Analysis & Design', 'progress' => 0, 'topics' => [['name' => 'UML Diagrams', 'completed' => false], ['name' => 'System Architecture', 'completed' => false]]],
+            ]
         ];
         
         // Return matching or a generic one
         return $exams[$examType] ?? [
-            ['moduleName' => 'General Syllabus', 'progress' => 0, 'topics' => [['name' => 'Topic 1', 'completed' => false], ['name' => 'Topic 2', 'completed' => false]]]
+            ['moduleName' => 'Custom Curriculum', 'progress' => 0, 'topics' => [['name' => 'Phase 1 Basics', 'completed' => false], ['name' => 'Phase 2 Advanced', 'completed' => false], ['name' => 'Phase 3 Mastery', 'completed' => false]]]
         ];
     }
 }

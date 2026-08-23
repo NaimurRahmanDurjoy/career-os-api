@@ -84,7 +84,16 @@ class ProcessResumeJob implements ShouldQueue
             $aiResponseText = $response->choices[0]->message->content;
             
             // ব্যাকটিক্স বা ক্লিনিং হ্যান্ডলার
+            $aiResponseText = preg_replace('/<think>.*?<\/think>/is', '', $aiResponseText);
             $aiResponseText = str_replace(['```json', '```'], '', $aiResponseText);
+            
+            // Extract the actual JSON block in case the model adds conversational text
+            $start = strpos($aiResponseText, '{');
+            $end = strrpos($aiResponseText, '}');
+            if ($start !== false && $end !== false) {
+                $aiResponseText = substr($aiResponseText, $start, $end - $start + 1);
+            }
+            
             $parsedJsonData = json_decode(trim($aiResponseText), true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {

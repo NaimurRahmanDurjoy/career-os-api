@@ -34,6 +34,7 @@ class JobApplicationController extends Controller
             'salary_range' => 'nullable|string|max:255',
             'status' => 'required|in:applied,shortlisted,interview,offer,rejected',
             'job_url' => 'nullable|url',
+            'job_description' => 'nullable|string',
             'applied_at' => 'required|date',
             'resume_id' => 'nullable|exists:resumes,id'
         ]);

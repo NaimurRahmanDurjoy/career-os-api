@@ -159,4 +159,49 @@ public function upload(Request $request)
             'resume' => $resume
         ]);
     }
+
+    public function retry(Request $request, $id)
+    {
+        $user = $request->user();
+        $resume = Resume::where('user_id', $user->id)->findOrFail($id);
+
+        try {
+            $absolutePath = Storage::disk('local')->path($resume->file_path);
+
+            if (!file_exists($absolutePath)) {
+                throw new Exception("Original PDF file no longer found on the server.");
+            }
+
+            $parser = new Parser();
+            $pdf = $parser->parseFile($absolutePath);
+            $extractedText = $pdf->getText();
+
+            if (empty(trim($extractedText))) {
+                throw new Exception("Could not extract text from PDF. The file might be scanned or empty.");
+            }
+
+            $cleanedText = mb_convert_encoding($extractedText, 'UTF-8', 'UTF-8');
+            $safeText = mb_substr($cleanedText, 0, 5000, 'UTF-8');
+
+            $resume->update([
+                'status' => 'processing',
+                'ats_score' => 0,
+                'parsed_content' => json_encode(['status' => 'pending'])
+            ]);
+
+            ProcessResumeJob::dispatch($resume, $safeText);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Resume queued for retry.',
+                'resume' => $resume
+            ], 202);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Failed to retry resume processing',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

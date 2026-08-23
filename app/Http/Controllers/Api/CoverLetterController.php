@@ -30,7 +30,15 @@ class CoverLetterController extends Controller
         }
 
         $job = JobApplication::where('user_id', $request->user()->id)->findOrFail($jobId);
-        $resume = $request->user()->resumes()->where('is_primary', true)->first();
+        
+        $resume = null;
+        if ($job->resume_id) {
+            $resume = $request->user()->resumes()->find($job->resume_id);
+        }
+        
+        if (!$resume) {
+            $resume = $request->user()->resumes()->where('is_primary', true)->first();
+        }
 
         if (!$resume || empty($job->job_description)) {
             return response()->json(['success' => false, 'message' => 'Primary resume and job description required.'], 400);
@@ -41,15 +49,20 @@ class CoverLetterController extends Controller
             Write a compelling cover letter for the role of '{$job->role}' at '{$job->company_name}'.
             Use the following candidate profile: " . json_encode($resume->parsed_content['structured_data'] ?? []) . "
             Address the following job requirements seamlessly: " . $job->job_description . "
-            The tone should be confident but not arrogant, concise, and focused on value add. Return ONLY the cover letter text, no markdown code blocks.";
+            The tone should be confident but not arrogant, concise, and focused on value add. 
+            CRITICAL INSTRUCTION: Return ONLY the final cover letter text. Do not output code blocks.";
 
             $response = OpenAI::chat()->create([
-                'model' => config('services.groq.model'),
-                'messages' => [['role' => 'user', 'content' => $prompt]],
+                'model' => config('services.groq.model'), // Permanently bound back to your active Qwen environment config
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt]
+                ],
                 'temperature' => 0.5,
+                'max_tokens' => 8000,     // YOU MUST KEEP THIS AT 8000! Qwen requires high token pools to finish thinking!
             ]);
 
             $content = trim($response->choices[0]->message->content);
+            $content = trim(preg_replace('/<think>.*?(<\/think>|$)/is', '', $content));
 
             $coverLetter = CoverLetter::updateOrCreate(
                 ['user_id' => $request->user()->id, 'job_id' => $job->id],
