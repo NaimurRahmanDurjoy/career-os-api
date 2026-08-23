@@ -94,6 +94,7 @@ class User extends Authenticatable
         'settings',
         'provider',
         'provider_id',
+        'custom_api_keys',
     ];
 
     /**
@@ -117,6 +118,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'settings' => 'array',
+            'custom_api_keys' => 'encrypted:array',
         ];
     }
 

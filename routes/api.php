@@ -35,6 +35,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::clas
     Route::get('/user', [AuthController::class, 'profile']);
     Route::put('/user', [AuthController::class, 'update']);
     Route::put('/user/password', [AuthController::class, 'updatePassword']);
+    Route::put('/user/api-keys', [AuthController::class, 'updateApiKeys']);
     Route::post('/logout', [AuthController::class, 'logout']);
     
     // Dashboard

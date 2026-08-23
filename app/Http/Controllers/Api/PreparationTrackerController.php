@@ -31,7 +31,10 @@ class PreparationTrackerController extends Controller
             'syllabus_roadmap' => 'nullable|array',
         ]);
 
-        $roadmap = $validated['syllabus_roadmap'] ?? $this->getDefaultRoadmap($validated['exam_type']);
+        $roadmap = $validated['syllabus_roadmap'] ?? null;
+        if (!$roadmap) {
+            $roadmap = $this->generateDynamicSyllabus($validated['exam_type']);
+        }
 
         $tracker = PreparationTracker::create([
             'user_id' => Auth::id(),
@@ -78,6 +81,49 @@ class PreparationTrackerController extends Controller
         $tracker->delete();
         
         return response()->json(['success' => true]);
+    }
+    
+    private function generateDynamicSyllabus(string $examType): array
+    {
+        try {
+            $prompt = "Act as an elite career mentor. The user is actively preparing for: '$examType'. 
+            Produce an intelligent, real-world customized preparation syllabus containing EXACTLY 4 major modules. 
+            Each module must have a string 'moduleName', a 'progress' integer (set to 0), and an array of 'topics'. Each topic must be a string 'name', and a boolean 'completed' (set to false). 
+            Return exactly in this JSON format (no markdown blocks, just raw JSON array):
+            [
+              { \"moduleName\": \"Phase 1: Core Fundamentals\", \"progress\": 0, \"topics\": [ { \"name\": \"Topic A\", \"completed\": false } ] }
+            ]";
+
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'Content-Type' => 'application/json'
+            ])->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' . env('GEMINI_API_KEY'), [
+                'contents' => [
+                    ['parts' => [['text' => $prompt]]]
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.4,
+                    'maxOutputTokens' => 3000,
+                ]
+            ]);
+
+            if ($response->successful()) {
+                $rawOutput = $response->json('candidates.0.content.parts.0.text') ?? '';
+                if (preg_match('/\[[\s\S]*\]/', $rawOutput, $matches)) {
+                    $rawOutput = $matches[0];
+                } else {
+                    $rawOutput = str_replace(['```json', '```'], '', $rawOutput);
+                }
+                
+                $result = json_decode(trim($rawOutput), true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($result) && count($result) > 0) {
+                    return $result;
+                }
+            }
+        } catch (\Exception $e) {
+            // Fallback natively to default mapping if AI fails
+        }
+        
+        return $this->getDefaultRoadmap($examType);
     }
     
     /**

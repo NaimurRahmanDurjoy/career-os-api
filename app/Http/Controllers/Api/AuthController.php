@@ -139,4 +139,28 @@ class AuthController extends Controller
             'message' => 'Password updated successfully'
         ], 200);
     }
+
+    public function updateApiKeys(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'openai_key' => 'nullable|string',
+            'gemini_key' => 'nullable|string',
+            'groq_key' => 'nullable|string',
+        ]);
+
+        $customKeys = $user->custom_api_keys ?? [];
+        $customKeys['openai'] = $request->openai_key;
+        $customKeys['gemini'] = $request->gemini_key;
+        $customKeys['groq'] = $request->groq_key;
+
+        $user->custom_api_keys = $customKeys;
+        $user->save();
+
+        return response()->json([
+            'message' => 'AI Provider Integrations updated successfully',
+            'user' => $user
+        ], 200);
+    }
 }
