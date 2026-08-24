@@ -49,6 +49,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::clas
     Route::put('/resumes/{id}', [ResumeController::class, 'update']);
     Route::delete('/resumes/{id}', [ResumeController::class, 'destroy']);
     Route::patch('/resumes/{id}/primary', [ResumeController::class, 'setPrimary']);
+    Route::post('/resumes/built', [ResumeController::class, 'storeBuiltResume']);
     
     // Job Application Routes
     Route::get('/jobs', [JobApplicationController::class, 'index']);
@@ -100,6 +101,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::clas
         Route::post('/ai-tools/parse-jd', [AiToolsController::class, 'parseJd']);
         Route::post('/ai-tools/rejection-analysis', [AiToolsController::class, 'rejectionAnalysis']);
         Route::post('/ai-tools/salary-negotiation', [AiToolsController::class, 'salaryNegotiation']);
+        Route::post('/ai-tools/build-cv', [AiToolsController::class, 'buildCv']);
     });
 
     // Reminders

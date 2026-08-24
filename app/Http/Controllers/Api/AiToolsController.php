@@ -508,4 +508,89 @@ class AiToolsController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Build an ATS Friendly CV using AI (with graceful fallback)
+     * POST /api/ai-tools/build-cv
+     */
+    public function buildCv(Request $request)
+    {
+        // For CV Builder, we allow bypass if ai_tools limits are reached but user explicitly requested non-AI
+        $useAi = $request->boolean('use_ai', true);
+        
+        if ($useAi && $request->user()->usage['ai_tools'] >= $request->user()->limits['ai_tools']) {
+            $useAi = false; // Fallback to raw if logic allows, or return error. Let's fallback to plain formatting.
+            // Alternatively, tell the frontend to strictly use non_ai.
+        }
+
+        $request->validate([
+            'cv_data' => 'required|array',
+            'cv_data.contact_info' => 'required|array',
+            'cv_data.experience' => 'nullable|array',
+            'cv_data.education' => 'nullable|array',
+            'cv_data.skills' => 'nullable|array',
+            'cv_data.projects' => 'nullable|array',
+            'cv_data.languages' => 'nullable|array',
+            'cv_data.summary' => 'nullable|string'
+        ]);
+
+        $cvData = $request->input('cv_data');
+
+        if (!$useAi) {
+            // Non-AI Fallback: Simply return the structured JSON perfectly formatted as-is.
+            return response()->json([
+                'success' => true,
+                'cv_data' => $cvData,
+                'ai_enhanced' => false
+            ]);
+        }
+
+        try {
+            $prompt = "You are an expert ATS (Applicant Tracking System) resume writer.
+            Take the following raw resume data provided as JSON and rewrite the 'summary' and the 'description' fields within the 'experience' and 'projects' arrays to be highly impactful, concise, and ATS-optimized (using strong action verbs and quantifying results where possible). 
+            
+            Do NOT hallucinate new jobs or skills, just dramatically improve the phrasing of what is given. Wait, DO NOT change the structure of the data, only rewrite the text nodes. 
+            
+            Raw Resume Data: " . json_encode($cvData) . "
+            
+            Return the fully updated JSON object EXACTLY matching the structure provided above. No markdown formatting like ```json, just raw JSON.";
+
+            $aiRouter = app(\App\Services\AiRouterService::class);
+            $rawOutput = $aiRouter->executePrompt($prompt, 'creative_writing', 2500);
+            
+            $cleanOutput = preg_replace('/```(?:json)?/i', '', $rawOutput);
+            if (preg_match('/\{[\s\S]*\}/', $cleanOutput, $matches)) {
+                $cleanOutput = $matches[0];
+            }
+            
+            $result = json_decode(trim($cleanOutput), true);
+
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($result)) {
+                $cleanOutput2 = preg_replace('/[\x00-\x1F\x7F]/', '', $cleanOutput);
+                $result = json_decode($cleanOutput2, true);
+            }
+
+            if (!is_array($result) || empty($result['contact_info'])) {
+                // Emergency fallback to raw data
+                \Log::warning('Build CV JSON Fallback triggered. Returning raw data.');
+                $result = $cvData;
+            } else {
+                $request->user()->aiUsageLogs()->create(['feature_name' => 'build_cv']);
+            }
+
+            return response()->json([
+                'success' => true,
+                'cv_data' => $result,
+                'ai_enhanced' => $result !== $cvData
+            ]);
+        } catch (Exception $e) {
+            // Graceful fallback on exception
+            return response()->json([
+                'success' => true,
+                'cv_data' => $cvData,
+                'ai_enhanced' => false,
+                'message' => 'AI optimization failed, using draft data. Error: ' . $e->getMessage()
+            ]);
+        }
+    }
 }
