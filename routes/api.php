@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\JobContactController;
 use App\Http\Controllers\Api\ChatAssistantController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\SupportTicketController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -111,6 +112,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::clas
     Route::put('/reminders/{id}', [ReminderController::class, 'update']);
     Route::delete('/reminders/{id}', [ReminderController::class, 'destroy']);
     
+    // Support Tickets
+    Route::post('/support-tickets', [SupportTicketController::class, 'store']);
+
     // Billing
     Route::get('/billing/plans', [BillingController::class, 'getPlans']);
     Route::post('/billing/checkout', [BillingController::class, 'initiateCheckout']);

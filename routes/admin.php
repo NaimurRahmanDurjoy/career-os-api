@@ -17,4 +17,8 @@ Route::middleware('auth:admin')->group(function () {
     // Manage Users
     Route::get('/users', [DashboardController::class, 'users']);
     Route::patch('/users/{id}/toggle-status', [DashboardController::class, 'toggleUserStatus']);
+
+    // Support Tickets
+    Route::get('/support-tickets', [\App\Http\Controllers\SupportTicketController::class, 'index']);
+    Route::patch('/support-tickets/{id}', [\App\Http\Controllers\SupportTicketController::class, 'updateStatus']);
 });
