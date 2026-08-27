@@ -10,7 +10,8 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     zip \
     unzip \
-    nginx
+    nginx \
+    supervisor
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -35,6 +36,9 @@ RUN composer install --optimize-autoloader --no-dev
 
 # Setup Nginx Configuration
 COPY nginx.conf /etc/nginx/sites-available/default
+
+# Setup Supervisor Configuration
+COPY supervisord.conf /etc/supervisor/supervisord.conf
 
 # Set Permissions
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
