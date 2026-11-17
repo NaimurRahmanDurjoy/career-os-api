@@ -95,6 +95,12 @@ class User extends Authenticatable
         'provider',
         'provider_id',
         'custom_api_keys',
+        'username',
+        'headline',
+        'bio',
+        'social_links',
+        'featured_projects',
+        'is_portfolio_public',
     ];
 
     /**
@@ -119,6 +125,9 @@ class User extends Authenticatable
             'password' => 'hashed',
             'settings' => 'array',
             'custom_api_keys' => 'encrypted:array',
+            'social_links' => 'array',
+            'featured_projects' => 'array',
+            'is_portfolio_public' => 'boolean',
         ];
     }
 

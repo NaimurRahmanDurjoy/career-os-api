@@ -20,6 +20,15 @@ use App\Http\Controllers\Api\ChatAssistantController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\Api\JobCircularController;
+use App\Http\Controllers\Api\PortfolioController;
+
+// Public Circular Discovery
+Route::get('/circulars', [JobCircularController::class, 'index']);
+Route::get('/circulars/{id}', [JobCircularController::class, 'show']);
+
+// Public Portfolio View
+Route::get('/portfolio/{username}', [PortfolioController::class, 'show']);
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -37,6 +46,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::clas
     Route::put('/user', [AuthController::class, 'update']);
     Route::put('/user/password', [AuthController::class, 'updatePassword']);
     Route::put('/user/api-keys', [AuthController::class, 'updateApiKeys']);
+    Route::put('/user/portfolio', [PortfolioController::class, 'updatePortfolio']);
     Route::post('/logout', [AuthController::class, 'logout']);
     
     // Dashboard
@@ -55,6 +65,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureUserIsActive::clas
     // Job Application Routes
     Route::get('/jobs', [JobApplicationController::class, 'index']);
     Route::post('/jobs', [JobApplicationController::class, 'store']);
+    Route::post('/jobs/track-circular/{id}', [JobCircularController::class, 'trackInKanban']);
     Route::patch('/jobs/{id}/status', [JobApplicationController::class, 'updateStatus']);
     Route::post('/jobs/{id}/cover-letter', [JobApplicationController::class, 'saveCoverLetter']);
     Route::delete('/jobs/{id}', [JobApplicationController::class, 'destroy']);
