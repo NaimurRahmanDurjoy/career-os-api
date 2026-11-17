@@ -54,7 +54,7 @@ return [
     ],
 
     'groq' => [
-        'model' => env('GROQ_DEFAULT_MODEL', 'qwen/qwen3.6-27b'),
+        'model' => env('GROQ_DEFAULT_MODEL', 'qwen/qwen3.8-27b'),
     ],
 
 ];

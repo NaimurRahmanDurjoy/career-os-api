@@ -47,19 +47,31 @@ class OAuthController extends Controller
                 
                 if ($user) {
                     // Link to existing account
-                    $user->update([
+                    $updates = [
                         'provider' => $provider,
                         'provider_id' => $socialUser->getId(),
-                    ]);
+                    ];
+                    if ($socialUser->getAvatar()) {
+                        $settings = $user->settings ?? [];
+                        if (empty($settings['avatar'])) {
+                            $settings['avatar'] = $socialUser->getAvatar();
+                            $updates['settings'] = $settings;
+                        }
+                    }
+                    $user->update($updates);
                 } else {
                     // Create new user
+                    $settings = ['theme' => 'light'];
+                    if ($socialUser->getAvatar()) {
+                        $settings['avatar'] = $socialUser->getAvatar();
+                    }
                     $user = User::create([
                         'name' => $socialUser->getName() ?? 'User',
                         'email' => $socialUser->getEmail(),
                         'password' => null, // No password for OAuth users
                         'provider' => $provider,
                         'provider_id' => $socialUser->getId(),
-                        'settings' => ['theme' => 'light']
+                        'settings' => $settings
                     ]);
                 }
             }

@@ -105,10 +105,18 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'avatar' => 'nullable|string',
         ]);
 
         $user->name = $request->name;
         $user->email = $request->email;
+
+        if ($request->has('avatar')) {
+            $settings = $user->settings ?? [];
+            $settings['avatar'] = $request->avatar;
+            $user->settings = $settings;
+        }
+
         $user->save();
 
         return response()->json([
