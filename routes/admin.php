@@ -21,4 +21,7 @@ Route::middleware('auth:admin')->group(function () {
     // Support Tickets
     Route::get('/support-tickets', [\App\Http\Controllers\SupportTicketController::class, 'index']);
     Route::patch('/support-tickets/{id}', [\App\Http\Controllers\SupportTicketController::class, 'updateStatus']);
+
+    // Manage Job Circulars
+    Route::apiResource('/circulars', \App\Http\Controllers\Admin\AdminCircularController::class);
 });
