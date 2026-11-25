@@ -71,6 +71,7 @@ class OAuthController extends Controller
                         'password' => null, // No password for OAuth users
                         'provider' => $provider,
                         'provider_id' => $socialUser->getId(),
+                        'email_verified_at' => now(), // OAuth providers have verified emails
                         'settings' => $settings
                     ]);
                 }

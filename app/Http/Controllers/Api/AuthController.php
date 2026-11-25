@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\WelcomeEmail;
+use App\Mail\EmailVerificationOtpMail;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -21,28 +22,30 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed', 
         ]);
 
+        // Generate 6-digit cryptographically random OTP
+        $otp = sprintf('%06d', random_int(100000, 999999));
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'verification_code' => $otp,
+            'verification_code_expires_at' => now()->addMinutes(15),
             'settings' => ['theme' => 'light'] 
         ]);
 
-        app()->terminating(function () use ($user) {
+        app()->terminating(function () use ($user, $otp) {
             try {
-                Mail::to($user->email)->send(new WelcomeEmail($user));
+                Mail::to($user->email)->send(new EmailVerificationOtpMail($user, $otp));
             } catch (\Exception $e) {
-                // Silently fail mail sending to avoid blocking registration if SMTP is down
+                \Log::error('Registration OTP Mail failed: ' . $e->getMessage());
             }
         });
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
         return response()->json([
-            'message' => 'User registered successfully',
-            'user' => $user,
-            'access_token' => $token,
-            'token_type' => 'Bearer',
+            'requires_verification' => true,
+            'email' => $user->email,
+            'message' => 'Verification code sent to your email. Please verify to access your workspace.'
         ], 201);
     }
 
@@ -66,6 +69,32 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Your account has been suspended. Reason: ' . $reason,
                 'require_logout' => true
+            ], 403);
+        }
+
+        // Strict Email Verification Check
+        if (!$user->email_verified_at) {
+            // Re-generate OTP if expired
+            if (!$user->verification_code || !$user->verification_code_expires_at || $user->verification_code_expires_at->isPast()) {
+                $newOtp = sprintf('%06d', random_int(100000, 999999));
+                $user->update([
+                    'verification_code' => $newOtp,
+                    'verification_code_expires_at' => now()->addMinutes(15),
+                ]);
+
+                app()->terminating(function () use ($user, $newOtp) {
+                    try {
+                        Mail::to($user->email)->send(new EmailVerificationOtpMail($user, $newOtp));
+                    } catch (\Exception $e) {
+                        \Log::error('Resend OTP on login failed: ' . $e->getMessage());
+                    }
+                });
+            }
+
+            return response()->json([
+                'requires_verification' => true,
+                'email' => $user->email,
+                'message' => 'Your email is not verified yet. A verification code has been sent to your email.'
             ], 403);
         }
 
@@ -169,6 +198,110 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'AI Provider Integrations updated successfully',
             'user' => $user
+        ], 200);
+    }
+
+    /**
+     * Verify email with 6-digit OTP code.
+     */
+    public function verifyEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        if ($user->email_verified_at) {
+            // Already verified, generate token and proceed
+            $user->tokens()->delete();
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'message' => 'Email already verified.',
+                'user' => $user,
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+            ], 200);
+        }
+
+        if ($user->verification_code !== $request->otp) {
+            return response()->json([
+                'message' => 'Invalid verification code. Please check your inbox.'
+            ], 422);
+        }
+
+        if ($user->verification_code_expires_at && $user->verification_code_expires_at->isPast()) {
+            return response()->json([
+                'message' => 'Verification code has expired. Please click "Resend Code".'
+            ], 422);
+        }
+
+        // Successfully verified
+        $user->email_verified_at = now();
+        $user->verification_code = null;
+        $user->verification_code_expires_at = null;
+        $user->save();
+
+        // Send welcome email after email is genuinely verified
+        app()->terminating(function () use ($user) {
+            try {
+                Mail::to($user->email)->send(new WelcomeEmail($user));
+            } catch (\Exception $e) {
+                // Silently ignore mail errors
+            }
+        });
+
+        // Issue token for instant workspace entry
+        $user->tokens()->delete();
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Email successfully verified! Welcome to Career OS.',
+            'user' => $user,
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+        ], 200);
+    }
+
+    /**
+     * Resend verification OTP code to user's email.
+     */
+    public function resendVerificationOtp(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        if ($user->email_verified_at) {
+            return response()->json(['message' => 'Email is already verified.'], 400);
+        }
+
+        $otp = sprintf('%06d', random_int(100000, 999999));
+        $user->update([
+            'verification_code' => $otp,
+            'verification_code_expires_at' => now()->addMinutes(15),
+        ]);
+
+        app()->terminating(function () use ($user, $otp) {
+            try {
+                Mail::to($user->email)->send(new EmailVerificationOtpMail($user, $otp));
+            } catch (\Exception $e) {
+                \Log::error('Resend verification OTP failed: ' . $e->getMessage());
+            }
+        });
+
+        return response()->json([
+            'message' => 'A new 6-digit verification code has been sent to your email.'
         ], 200);
     }
 }

@@ -47,15 +47,25 @@ class AiRouterService
         if ($taskType === 'fast_json' || $taskType === 'heavy_reasoning') {
             try {
                 // Gemini Flash handles massive context and structured JSON instantly.
-                return $this->callGemini($prompt, env('GEMINI_API_KEY'), $maxTokens);
+                return $this->callGemini($prompt, env('GEMINI_API_KEY', ''), $maxTokens);
             } catch (Exception $e) {
                 \Log::warning('System Gemini API failed, falling back to Groq: ' . $e->getMessage());
-                return $this->callGroq($prompt, $maxTokens);
+                try {
+                    return $this->callGroq($prompt, $maxTokens);
+                } catch (Exception $e2) {
+                    \Log::error('Groq also failed, deploying terminal SiliconFlow fallback: ' . $e2->getMessage());
+                    return $this->callSiliconFlowFallback($prompt, env('SILICONFLOW_API_KEY', ''), $maxTokens);
+                }
             }
         }
 
         // Default Groq for basic writing operations.
-        return $this->callGroq($prompt, $maxTokens);
+        try {
+            return $this->callGroq($prompt, $maxTokens);
+        } catch (Exception $e) {
+            \Log::error('Base Groq engine failed, deploying terminal SiliconFlow fallback: ' . $e->getMessage());
+            return $this->callSiliconFlowFallback($prompt, env('SILICONFLOW_API_KEY', ''), $maxTokens);
+        }
     }
 
     private function callGemini(string $prompt, string $apiKey, int $maxTokens): string
@@ -126,6 +136,31 @@ class AiRouterService
 
         if (!$response->successful()) {
             throw new Exception("OpenAI API Connection failed: " . $response->body());
+        }
+
+        return trim($response->json('choices.0.message.content') ?? '');
+    }
+
+    private function callSiliconFlowFallback(string $prompt, string $apiKey, int $maxTokens): string
+    {
+        if (empty($apiKey)) {
+            throw new Exception("SiliconFlow API Key not configured.");
+        }
+
+        $response = Http::timeout(60)->withHeaders([
+            'Authorization' => "Bearer " . $apiKey,
+            'Content-Type' => 'application/json'
+        ])->post('https://api.siliconflow.cn/v1/chat/completions', [
+            'model' => 'Qwen/Qwen2.5-7B-Instruct',
+            'messages' => [
+                ['role' => 'user', 'content' => $prompt]
+            ],
+            'temperature' => 0.4,
+            'max_tokens' => $maxTokens
+        ]);
+
+        if (!$response->successful()) {
+            throw new Exception("SiliconFlow API Connection failed: " . $response->body());
         }
 
         return trim($response->json('choices.0.message.content') ?? '');

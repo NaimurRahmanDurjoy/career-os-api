@@ -32,6 +32,8 @@ Route::get('/portfolio/{username}', [PortfolioController::class, 'show']);
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/email/verify-otp', [AuthController::class, 'verifyEmail']);
+Route::post('/email/resend-otp', [AuthController::class, 'resendVerificationOtp']);
 
 Route::middleware('throttle:forgot_password')->group(function () {
     Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
